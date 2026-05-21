@@ -31,6 +31,19 @@ if ! command -v uv &>/dev/null; then
 fi
 echo "✓ uv $(uv --version)"
 
+FFMPEG_BIN=$(command -v ffmpeg 2>/dev/null || true)
+if [[ -z "$FFMPEG_BIN" ]]; then
+  if command -v brew &>/dev/null; then
+    echo "→ 安装 ffmpeg（yt-dlp 音频转码依赖）..."
+    brew install ffmpeg -q
+    FFMPEG_BIN=$(command -v ffmpeg)
+  else
+    echo "❌ 未找到 ffmpeg，请手动安装: brew install ffmpeg" && exit 1
+  fi
+fi
+FFMPEG_DIR="$(dirname "$FFMPEG_BIN")"
+echo "✓ ffmpeg ${FFMPEG_BIN}"
+
 mkdir -p "$INSTALL_DIR"
 cp "$SCRIPT_DIR/server/"*.py "$INSTALL_DIR/"
 cp "$SCRIPT_DIR/server/requirements.txt" "$INSTALL_DIR/"
@@ -55,6 +68,11 @@ cat > "$PLIST_PATH" << PLIST
     <string>${INSTALL_DIR}/server.py</string>
   </array>
   <key>WorkingDirectory</key> <string>${INSTALL_DIR}</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>${FFMPEG_DIR}:${INSTALL_DIR}/.venv/bin:/usr/bin:/bin</string>
+  </dict>
   <key>RunAtLoad</key>        <true/>
   <key>KeepAlive</key>        <true/>
   <key>StandardOutPath</key>  <string>${INSTALL_DIR}/server.log</string>

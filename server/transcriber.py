@@ -3,8 +3,22 @@ import tempfile
 from pathlib import Path
 from faster_whisper import WhisperModel
 
-# launchd doesn't inherit the user's PATH, so resolve yt-dlp from the venv
+# launchd doesn't inherit the user's PATH, so resolve tools by absolute path
 _YTDLP = Path(__file__).parent / ".venv" / "bin" / "yt-dlp"
+
+# ffmpeg is a system tool (Homebrew); search common locations as a fallback
+# even when PATH is set correctly in the plist
+def _find_ffmpeg() -> Path | None:
+    for candidate in [
+        Path("/opt/homebrew/bin/ffmpeg"),  # Apple Silicon Homebrew
+        Path("/usr/local/bin/ffmpeg"),      # Intel Homebrew / manual install
+        Path("/usr/bin/ffmpeg"),
+    ]:
+        if candidate.exists():
+            return candidate
+    return None
+
+_FFMPEG = _find_ffmpeg()
 
 _model_cache: dict[str, WhisperModel] = {}
 _model_lock = asyncio.Lock()
@@ -38,7 +52,7 @@ async def download_audio(bvid: str) -> Path:
     tmp_dir = Path(tempfile.mkdtemp(prefix="bili-clipper-"))
     output_template = str(tmp_dir / "audio.%(ext)s")
 
-    proc = await asyncio.create_subprocess_exec(
+    cmd = [
         str(_YTDLP),
         "-x",
         "--audio-format", "wav",
@@ -47,6 +61,12 @@ async def download_audio(bvid: str) -> Path:
         "--extractor-args", "bilibili:player_client=app",
         "-o", output_template,
         f"https://www.bilibili.com/video/{bvid}",
+    ]
+    if _FFMPEG:
+        cmd += ["--ffmpeg-location", str(_FFMPEG.parent)]
+
+    proc = await asyncio.create_subprocess_exec(
+        *cmd,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )

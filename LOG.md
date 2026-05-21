@@ -320,6 +320,7 @@ content → background 通过 `chrome.runtime.sendMessage` 传递类型化消息
 | 2 | Task 4 | yt-dlp 无 fallback，遇 B站限制会挂 | ✅ 已识别 | 加 android/ios 客户端 fallback 策略 |
 | 3 | Bugfix | `fetchSubtitleText` credentials 导致字幕 CDN CORS 失败 | ✅ 已解决 | 去掉 `credentials`；server 通信改走 background service worker |
 | 4 | Bugfix | vault_path 为相对路径时文件静默写到错误位置 | ✅ 已解决 | `writer.py` 加路径校验：非绝对路径或路径不存在时抛出明确错误 |
+| 5 | Bugfix | launchd PATH 缺失：yt-dlp 和 ffmpeg 找不到 | ✅ 已解决 | `transcriber.py` 用绝对路径调 yt-dlp + `--ffmpeg-location` 传 ffmpeg；`install.sh` 加 ffmpeg 检查和 plist PATH |
 
 ---
 
