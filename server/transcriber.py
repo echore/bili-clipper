@@ -3,6 +3,9 @@ import tempfile
 from pathlib import Path
 from faster_whisper import WhisperModel
 
+# launchd doesn't inherit the user's PATH, so resolve yt-dlp from the venv
+_YTDLP = Path(__file__).parent / ".venv" / "bin" / "yt-dlp"
+
 _model_cache: dict[str, WhisperModel] = {}
 _model_lock = asyncio.Lock()
 
@@ -36,7 +39,7 @@ async def download_audio(bvid: str) -> Path:
     output_template = str(tmp_dir / "audio.%(ext)s")
 
     proc = await asyncio.create_subprocess_exec(
-        "yt-dlp",
+        str(_YTDLP),
         "-x",
         "--audio-format", "wav",
         "--audio-quality", "0",
