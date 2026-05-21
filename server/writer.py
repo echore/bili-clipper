@@ -9,7 +9,11 @@ def sanitize_filename(title: str) -> str:
 
 
 def write_note(title: str, transcript: str, config: dict, method: str) -> str:
-    vault_path = Path(config["vault_path"]).expanduser()
+    vault_path = Path(config["vault_path"]).expanduser().resolve()
+    if not vault_path.is_absolute():
+        raise ValueError(f"vault_path must be an absolute path, got: {config['vault_path']}")
+    if not vault_path.exists():
+        raise ValueError(f"Obsidian vault not found: {vault_path}")
     folder = config.get("folder", "Raw")
     bvid = config.get("bvid", "")
 

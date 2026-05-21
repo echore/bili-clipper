@@ -319,7 +319,8 @@ content → background 通过 `chrome.runtime.sendMessage` 传递类型化消息
 | 1 | Task 7 | 计划中 Bilibili subtitle API 端点错误（`v2` vs `wbi/v2`，bvid vs aid） | ✅ 已解决 | 执行时使用 `wbi/v2?aid=&cid=`，加 `credentials:'include'` |
 | 2 | Task 4 | yt-dlp 无 fallback，遇 B站限制会挂 | ✅ 已识别 | 加 android/ios 客户端 fallback 策略 |
 | 3 | Bugfix | `fetchSubtitleText` credentials 导致字幕 CDN CORS 失败 | ✅ 已解决 | 去掉 `credentials`；server 通信改走 background service worker |
+| 4 | Bugfix | vault_path 为相对路径时文件静默写到错误位置 | ✅ 已解决 | `writer.py` 加路径校验：非绝对路径或路径不存在时抛出明确错误 |
 
 ---
 
-*最后更新：2026-05-21 · 网络分层重构完成，E2E 验证待重新测试。*
+*最后更新：2026-05-21 · 网络分层重构 + vault_path 校验完成，E2E 验证待重新测试。*
