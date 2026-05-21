@@ -1,4 +1,4 @@
-// Bili Clipper background service worker
+// extension/background.js
 chrome.runtime.onInstalled.addListener(() => {
   console.log("[Bili Clipper] Installed");
 });

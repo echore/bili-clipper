@@ -1,5 +1,64 @@
 <!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><title>Bili Clipper</title></head>
-<body><p>Bili Clipper</p></body>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { width: 280px; padding: 16px; font-family: -apple-system, sans-serif; font-size: 13px; color: #1e1b4b; }
+    h2 { font-size: 14px; margin-bottom: 16px; display: flex; align-items: center; gap: 6px; }
+    .row { margin-bottom: 14px; }
+    label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.05em; color: #6b7280; margin-bottom: 5px; }
+    input, select { width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px;
+                    font-size: 12px; color: #111; }
+    input:focus, select:focus { outline: 2px solid #7c3aed; border-color: transparent; }
+    .seg { display: flex; gap: 4px; }
+    .seg button { flex: 1; padding: 5px 2px; border: 1px solid #d1d5db; border-radius: 6px;
+                  cursor: pointer; background: white; font-size: 11px; color: #374151; }
+    .seg button.active { background: #7c3aed; color: white; border-color: #7c3aed; }
+    .status { display: flex; align-items: center; gap: 8px; padding-top: 12px;
+              border-top: 1px solid #f3f4f6; font-size: 12px; color: #6b7280; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #d1d5db; flex-shrink: 0; }
+    .dot.ok { background: #22c55e; }
+    .dot.err { background: #ef4444; }
+  </style>
+</head>
+<body>
+  <h2><span>📎</span> Bili Clipper</h2>
+
+  <div class="row">
+    <label>Obsidian Vault 路径</label>
+    <input type="text" id="vault_path" placeholder="~/Documents/Obsidian Vault">
+  </div>
+
+  <div class="row">
+    <label>目标文件夹</label>
+    <input type="text" id="folder" placeholder="Raw">
+  </div>
+
+  <div class="row">
+    <label>输出目标</label>
+    <div class="seg" id="output-seg">
+      <button class="active" data-value="obsidian">Obsidian</button>
+      <button data-value="clipboard">剪贴板</button>
+      <button data-value="both">两者</button>
+    </div>
+  </div>
+
+  <div class="row">
+    <label>ASR 模型</label>
+    <select id="model">
+      <option value="large-v3-turbo">large-v3-turbo（推荐）</option>
+      <option value="medium">medium</option>
+      <option value="base">base</option>
+    </select>
+  </div>
+
+  <div class="status">
+    <div class="dot" id="dot"></div>
+    <span id="srv-label">检查本地服务…</span>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
 </html>
