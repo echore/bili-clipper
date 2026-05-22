@@ -37,3 +37,8 @@ document.querySelectorAll("#output-seg button").forEach((btn) => {
   });
 });
 
+document.getElementById("open-welcome").addEventListener("click", (e) => {
+  e.preventDefault();
+  chrome.tabs.create({ url: chrome.runtime.getURL("welcome.html") });
+});
+
