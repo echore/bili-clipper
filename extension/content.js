@@ -308,13 +308,30 @@ function renderError(message) {
     `target="_blank" style="color:#dc2626;font-size:11px;text-decoration:underline;">查看帮助</a>`;
 }
 
+function renderSetupRequired() {
+  _clipBar.style.background = "#fffbeb";
+  _clipBar.style.borderColor = "#f59e0b";
+  _clipBar.innerHTML =
+    `<span style="color:#92400e;">⚙ 请先完成初始设置</span>` +
+    `<a href="${chrome.runtime.getURL("welcome.html")}" target="_blank" ` +
+    `style="padding:3px 12px;background:#f59e0b;color:white;border-radius:5px;` +
+    `font-size:11px;text-decoration:none;font-weight:600;">打开设置 →</a>`;
+}
+
 // ─── Clip flow ────────────────────────────────────────────────────────────────
 
 async function handleClip() {
   if (_isProcessing || !_videoData) return;
-  _isProcessing = true;
 
   const settings = await getSettings();
+
+  // Guard: vault name required for Obsidian output
+  if (!settings.vault_name && settings.output !== "clipboard") {
+    renderSetupRequired();
+    return;
+  }
+
+  _isProcessing = true;
   const { bvid, aid, cid, title, desc, author, subtitles, chapters } = _videoData;
   const folder = settings.folder || "Raw";
   const filename = sanitizeFilename(title) + ".md";
@@ -331,7 +348,7 @@ async function handleClip() {
     if (settings.output === "clipboard") {
       renderSuccess("已复制到剪贴板");
     } else {
-      renderSuccess("已存入 " + notePath);
+      renderSuccess("已保存到 Obsidian");
     }
   } catch (err) {
     renderError("错误: " + err.message);
@@ -355,5 +372,40 @@ function init() {
   });
   obs.observe(document.body, { childList: true, subtree: true });
 }
+
+// ─── SPA navigation ───────────────────────────────────────────────────────────
+// Bilibili is a SPA — navigating between videos changes the URL via History API
+// without a full page reload. We intercept pushState/replaceState and listen for
+// popstate to reset the clip bar when the user navigates to a different video.
+
+let _currentUrl = location.href;
+
+function handleNavigation() {
+  const newUrl = location.href;
+  if (newUrl === _currentUrl) return;
+  _currentUrl = newUrl;
+
+  if (!newUrl.includes("/video/")) return;
+
+  if (_clipBar) { _clipBar.remove(); _clipBar = null; }
+  _videoData = null;
+  _isProcessing = false;
+
+  init();
+}
+
+const _origPushState = history.pushState.bind(history);
+history.pushState = function (...args) {
+  _origPushState(...args);
+  handleNavigation();
+};
+
+const _origReplaceState = history.replaceState.bind(history);
+history.replaceState = function (...args) {
+  _origReplaceState(...args);
+  handleNavigation();
+};
+
+window.addEventListener("popstate", handleNavigation);
 
 init();

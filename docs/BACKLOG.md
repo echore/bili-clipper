@@ -18,7 +18,7 @@
   2. 带截图说明"Vault 名称在 Obsidian 左下角"，内嵌输入框让用户直接填写并保存到 `chrome.storage`
   3. "配置完成 → 去 B 站试试" 按钮
 - `content.js` 的 `handleClip` 保留空 vault 拦截作为安全兜底（显示"请先完成初始设置"并附链接打开 welcome.html）
-**状态：** `open`
+**状态：** `done`
 
 ---
 
@@ -27,13 +27,21 @@
 **问题：** Bilibili 是单页应用，点击推荐视频时 URL 变化但页面不完全刷新。`_videoData` 和 `_clipBar` 停留在旧视频状态。用户在新视频上点 Clip，存进去的是旧视频的字幕和标题。
 **影响：** 用户连续看多个视频时必然触发，存错笔记且不自知。
 **改法草案：**
-- 监听 `yt-navigate-finish` 事件（Bilibili 使用该自定义事件）或用 `MutationObserver` 监听 URL 变化
-- URL 变化时重置 `_videoData = null`、移除旧 clip bar、重新调用 `injectClipBar()`
-**状态：** `open`
+- 拦截 `history.pushState` / `history.replaceState` + 监听 `popstate`
+- URL 变化时重置 `_videoData`、移除旧 clip bar、重新调用 `init()`
+**状态：** `done`
 
 ---
 
 ## P1 — 发布后第一批迭代
+
+### [P1] 视频教程链接待填入
+**模块：** UX / welcome.html
+**问题：** `welcome.js` 顶部 `TUTORIAL_URL` 常量目前为空字符串，页面显示"视频教程即将上线"。
+**改法草案：** 录完视频发布后，将链接填入 `extension/welcome.js` 第 4 行的 `TUTORIAL_URL` 常量，重新发布扩展。
+**状态：** `open`
+
+---
 
 ### [P1] 默认文件夹 "Raw" 对新用户没有意义
 **模块：** UX / Popup
@@ -107,4 +115,4 @@
 
 ---
 
-*最后更新：2026-05-22*
+*最后更新：2026-05-22 · P0 全部完成（onboarding welcome 页 + SPA 导航修复）*

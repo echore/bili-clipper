@@ -395,4 +395,35 @@ CC 字幕路径完全不经过服务端——`content.js` 直接调 Bilibili API
 
 ---
 
-*最后更新：2026-05-22 · 决策：砍转录路径，发布 CC-only 纯扩展版本。*
+---
+
+## P0 修复：Onboarding + SPA 导航（2026-05-22）
+
+**背景：** 发布前 UX 审查发现两个 P0 问题：①新用户无引导，不知道填 Vault 名称；② Bilibili SPA 跳视频时 clip bar 停留在旧视频数据。
+
+### Onboarding Welcome 页
+
+新增 `extension/welcome.html` + `extension/welcome.js`：
+- 扩展安装时自动打开（`background.js` 监听 `onInstalled` reason=install）
+- 分两步：配置 Vault 名称 + 了解使用方法
+- Vault 名称输入框实时更新示意图，直观展示"Vault 名称在 Obsidian 左下角"
+- 保存按钮带验证（空值时输入框变红），保存成功有 toast 动画
+- 视频教程模块：`welcome.js` 顶部 `TUTORIAL_URL` 常量，填入链接即显示按钮，留空显示"即将上线"
+- `content.js` handleClip 加空 vault 兜底拦截 → 渲染黄色提示 + "打开设置" 链接
+
+### SPA 导航修复
+
+`content.js` 末尾拦截 `history.pushState` / `history.replaceState` + 监听 `popstate`：
+- URL 变化时重置 `_clipBar`、`_videoData`、`_isProcessing`
+- 仅在 `/video/` 路径下重新 `init()`
+
+### 其他顺带改动
+
+- 成功提示从"已存入 Raw/xxx.md"改为"已保存到 Obsidian"
+- `docs/BACKLOG.md` P0 两条标记 done，新增 P1 视频教程待填入条目
+
+**提交：** `feat(extension): onboarding welcome page + SPA navigation fix`
+
+---
+
+*最后更新：2026-05-22 · P0 全部完成，待发布。*
