@@ -39,7 +39,8 @@ class ClipRequest(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "model": "mlx-community/whisper-large-v3-turbo"}
+    from transcriber import _DEFAULT_MODEL
+    return {"status": "ok", "model": _DEFAULT_MODEL}
 
 
 @app.get("/vaults")
@@ -87,7 +88,7 @@ async def clip(req: ClipRequest):
                 req.title,
                 transcript_text,
                 config,
-                method=f"whisper_{req.config.model}",
+                method=f"qwen3_asr_{req.config.model}",
             )
         return {"success": True, "note": note}
     except Exception as e:

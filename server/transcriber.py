@@ -2,23 +2,24 @@ import asyncio
 import sys
 import tempfile
 from pathlib import Path
-import mlx_whisper
+from mlx_qwen3_asr import transcribe as qwen_transcribe
 
 # Derive yt-dlp from the running Python's venv bin dir — works regardless
 # of where server.py lives (repo vs install dir).
 _YTDLP = Path(sys.executable).parent / "yt-dlp"
 
-_DEFAULT_MODEL = "mlx-community/whisper-large-v3-turbo"
+_DEFAULT_MODEL = "Qwen/Qwen3-ASR-1.7B"
 
-# Map user-facing short names to mlx-community HuggingFace repo paths.
+# Map user-facing short names to Qwen3-ASR HuggingFace model IDs.
 # Extension sends short names; server resolves to backend-specific paths.
-# Only update here when switching backends or adding models.
 _MODEL_ALIASES: dict[str, str] = {
-    "large-v3-turbo": "mlx-community/whisper-large-v3-turbo",
-    "large-v3":       "mlx-community/whisper-large-v3",
-    "medium":         "mlx-community/whisper-medium-mlx",
-    "small":          "mlx-community/whisper-small-mlx",
-    "base":           "mlx-community/whisper-base-mlx",
+    "large-v3-turbo": "Qwen/Qwen3-ASR-1.7B",
+    "large-v3":       "Qwen/Qwen3-ASR-1.7B",
+    "medium":         "Qwen/Qwen3-ASR-1.7B",
+    "small":          "Qwen/Qwen3-ASR-0.6B",
+    "base":           "Qwen/Qwen3-ASR-0.6B",
+    "1.7b":           "Qwen/Qwen3-ASR-1.7B",
+    "0.6b":           "Qwen/Qwen3-ASR-0.6B",
 }
 
 
@@ -41,13 +42,8 @@ _FFMPEG = _find_ffmpeg()
 
 
 def _transcribe_sync(audio_path: Path, model_name: str) -> str:
-    result = mlx_whisper.transcribe(
-        str(audio_path),
-        path_or_hf_repo=model_name,
-        language="zh",
-        no_speech_threshold=0.6,
-    )
-    return result["text"]
+    result = qwen_transcribe(str(audio_path), model=model_name, language="Chinese")
+    return result.text
 
 
 async def transcribe(audio_path: Path, model_name: str = _DEFAULT_MODEL) -> str:
