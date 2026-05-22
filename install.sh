@@ -45,15 +45,21 @@ FFMPEG_DIR="$(dirname "$FFMPEG_BIN")"
 echo "✓ ffmpeg ${FFMPEG_BIN}"
 
 mkdir -p "$INSTALL_DIR"
-cp "$SCRIPT_DIR/server/"*.py "$INSTALL_DIR/"
-cp "$SCRIPT_DIR/server/requirements.txt" "$INSTALL_DIR/"
-echo "✓ 服务文件已复制到 $INSTALL_DIR"
+echo "✓ 依赖目录: $INSTALL_DIR"
 
 echo "→ 安装 Python 依赖（首次约 2 分钟）..."
 uv venv --python "$PYTHON" "$INSTALL_DIR/.venv" 2>/dev/null || true
-uv pip install -r "$INSTALL_DIR/requirements.txt" \
+uv pip install -r "$SCRIPT_DIR/server/requirements.txt" \
    --python "$INSTALL_DIR/.venv/bin/python" -q
 echo "✓ 依赖安装完成"
+
+# Deploy server files to non-TCC path (launchd cannot read ~/Documents)
+echo "→ 部署服务文件..."
+cp "$SCRIPT_DIR/server/server.py" "$INSTALL_DIR/server.py"
+cp "$SCRIPT_DIR/server/writer.py" "$INSTALL_DIR/writer.py"
+cp "$SCRIPT_DIR/server/transcriber.py" "$INSTALL_DIR/transcriber.py"
+echo "✓ 服务文件已部署到 $INSTALL_DIR"
+echo "  （更新代码后重新运行 install.sh 以部署最新版本）"
 
 mkdir -p "$HOME/Library/LaunchAgents"
 cat > "$PLIST_PATH" << PLIST
@@ -96,5 +102,11 @@ fi
 echo ""
 echo "=== 安装完成 ✓ ==="
 echo ""
-echo "下一步: 在 Chrome 加载扩展"
+echo "【必须】配置 Obsidian Local REST API 插件："
+echo "  1. 打开 Obsidian → 设置 → 社区插件 → 浏览"
+echo "  2. 搜索 'Local REST API'，安装并启用"
+echo "  3. 在插件设置中复制 API Key"
+echo "  4. 打开 Bili Clipper 扩展弹窗，粘贴 API Key"
+echo ""
+echo "加载 Chrome 扩展："
 echo "  chrome://extensions → 开发者模式 → 加载已解压 → 选择 extension/ 文件夹"
