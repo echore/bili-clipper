@@ -6,3 +6,5 @@ dist/
 .DS_Store
 *.log
 docs/
+LOG.md
+.claude/
