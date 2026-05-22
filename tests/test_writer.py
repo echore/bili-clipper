@@ -47,6 +47,8 @@ def test_format_note_contains_iframe():
     assert "<iframe" in result
     assert "player.bilibili.com" in result
     assert "BV123" in result
+    assert "cid=456" in result
+    assert "aid=789" in result
 
 
 def test_format_note_includes_author():
@@ -79,3 +81,9 @@ def test_format_note_desc_none_no_intro_section():
     result = format_note("Title", "text", config, "cc_subtitle")
     assert "## 简介" not in result
     assert "## 字幕" in result
+
+
+def test_format_note_empty_author_omitted():
+    config = {"bvid": "BV123"}
+    result = format_note("Title", "text", config, "cc_subtitle")
+    assert 'author:' not in result

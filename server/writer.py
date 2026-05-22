@@ -62,7 +62,10 @@ def format_note(title: str, transcript: str, config: dict, method: str) -> str:
         f'title: "{safe_title}"',
         f"source: {source_url}",
         "platform: bilibili",
-        f'author: "{safe_author}"',
+    ]
+    if safe_author:
+        lines.append(f'author: "{safe_author}"')
+    lines += [
         f"date: {date.today().isoformat()}",
         "tags: [transcript, bilibili]",
         f"transcript_method: {method}",
