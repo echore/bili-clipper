@@ -321,7 +321,7 @@ content → background 通过 `chrome.runtime.sendMessage` 传递类型化消息
 | 3 | Bugfix | `fetchSubtitleText` credentials 导致字幕 CDN CORS 失败 | ✅ 已解决 | 去掉 `credentials`；server 通信改走 background service worker |
 | 4 | Bugfix | vault_path 为相对路径时文件静默写到错误位置 | ✅ 已解决 | `writer.py` 加路径校验：非绝对路径或路径不存在时抛出明确错误 |
 | 5 | Bugfix | launchd PATH 缺失：yt-dlp 和 ffmpeg 找不到 | ✅ 已解决 | `transcriber.py` 用绝对路径调 yt-dlp + `--ffmpeg-location` 传 ffmpeg；`install.sh` 加 ffmpeg 检查和 plist PATH |
-| 6 | Bugfix | MV3 service worker 被 Chrome 终止，Whisper 长请求 message channel 断开 | ✅ 已解决 | Whisper 路径（无字幕）改为 content.js 直接 fetch；background 只处理短请求（HEALTH_CHECK、CC 字幕 CLIP） |
+| 6 | Bugfix | MV3 service worker 随时可被 Chrome 终止，所有经 background 的 message channel 均不可靠 | ✅ 已解决 | 所有 localhost 请求改为 content.js 直接 fetch；background.js 不再做任何 HTTP 通信 |
 
 ---
 

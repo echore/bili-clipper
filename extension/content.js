@@ -51,24 +51,14 @@ async function fetchSubtitleText(subtitleUrl) {
   return data.body.map((item) => item.content).join("\n");
 }
 
-/** Send a typed message to the background service worker and await the response. */
-function sendToBackground(message) {
-  return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage(message, (response) => {
-      if (chrome.runtime.lastError) {
-        reject(new Error(chrome.runtime.lastError.message));
-      } else {
-        resolve(response);
-      }
-    });
-  });
-}
-
-/** Ping the local server via background. */
+/** Ping the local server directly — MV3 service workers are ephemeral,
+ *  so all localhost fetches must stay in the content script. */
 async function isServerRunning() {
   try {
-    const res = await sendToBackground({ type: "HEALTH_CHECK" });
-    return !!(res && res.ok);
+    const res = await fetch("http://localhost:27182/health", {
+      signal: AbortSignal.timeout(2000),
+    });
+    return res.ok;
   } catch {
     return false;
   }
@@ -257,15 +247,17 @@ async function deliverTranscript(bvid, title, transcript, settings) {
     return;
   }
 
-  const res = await sendToBackground({
-    type: "CLIP",
-    payload: { bvid, title, transcript, config: { ...settings, bvid } },
+  const res = await fetch("http://localhost:27182/clip", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ bvid, title, transcript, config: { ...settings, bvid } }),
   });
-  if (res.data?.success) {
-    renderSuccess(res.data.path);
-    openInObsidian(settings.vault_path, res.data.path);
+  const data = await res.json();
+  if (data.success) {
+    renderSuccess(data.path);
+    openInObsidian(settings.vault_path, data.path);
   } else {
-    renderError(res.data?.error || "写入失败");
+    renderError(data.error || "写入失败");
   }
 }
 
