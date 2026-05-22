@@ -81,6 +81,12 @@ function buildSubtitleSection(items, chapters) {
     return mergeItemsIntoParagraphs(items);
   }
   const lines = [];
+  // items before the first chapter
+  const pre = items.filter((item) => item.from < chapters[0].from);
+  if (pre.length > 0) {
+    lines.push(mergeItemsIntoParagraphs(pre));
+    lines.push("");
+  }
   for (let i = 0; i < chapters.length; i++) {
     const start = chapters[i].from;
     const end = i + 1 < chapters.length ? chapters[i + 1].from : Infinity;
@@ -158,9 +164,9 @@ function formatNote(title, subtitleSection, bvid, aid, cid, method, author, desc
     ``,
   ];
   if (desc && desc.trim()) {
-    lines.push(`## 简介`, ``, desc.trim(), ``, `## 字幕`, ``);
+    lines.push(`## 简介`, ``, desc.trim(), ``);
   }
-  lines.push(subtitleSection);
+  lines.push(`## 字幕`, ``, subtitleSection);
   return lines.join("\n");
 }
 
