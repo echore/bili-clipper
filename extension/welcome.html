@@ -54,36 +54,6 @@
       font-weight: 700;
     }
 
-    /* Vault name finder visual */
-    .obsidian-mockup {
-      background: #1e1e2e;
-      border-radius: 8px;
-      padding: 10px 14px;
-      margin: 12px 0 16px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 12px;
-    }
-    .obsidian-mockup .sidebar {
-      color: #cdd6f4;
-      font-size: 11px;
-      opacity: 0.6;
-      flex: 1;
-    }
-    .obsidian-mockup .vault-highlight {
-      background: #7c3aed;
-      color: white;
-      padding: 3px 10px;
-      border-radius: 5px;
-      font-size: 12px;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-    .obsidian-mockup .arrow {
-      color: #f9a8d4;
-      font-size: 18px;
-    }
     .hint { font-size: 12px; color: #9ca3af; margin-bottom: 14px; }
 
     /* Form */
@@ -239,17 +209,16 @@
       <p style="font-size:13px;color:#374151;margin-bottom:4px;">
         打开 Obsidian，在左下角找到你的 <strong>Vault 名称</strong>：
       </p>
-      <div class="obsidian-mockup">
-        <div class="sidebar">
-          Files &nbsp;·&nbsp; Search &nbsp;·&nbsp; Tags<br><br>
-          📄 Today's Note<br>
-          📄 Meeting Notes<br>
-          📁 Raw
+      <div style="margin:12px 0 6px;position:relative;display:inline-block;">
+        <img src="assets/obsidian-vault-hint.png" alt="Obsidian 左下角 vault 名称示意"
+          style="width:240px;border-radius:8px;border:1px solid #e5e7eb;display:block;">
+        <div style="position:absolute;top:50%;left:-90px;transform:translateY(-50%);
+          background:#7c3aed;color:white;padding:3px 10px;border-radius:5px;
+          font-size:11px;font-weight:600;white-space:nowrap;">
+          在这里找 →
         </div>
-        <div class="arrow">←</div>
-        <div class="vault-highlight" id="vault-preview">Obsidian Vault</div>
       </div>
-      <p class="hint">左下角图标旁边显示的就是 Vault 名称，Obsidian 默认叫 "Obsidian Vault"</p>
+      <p class="hint">Obsidian 左下角显示的名称，默认是 "Obsidian Vault"</p>
 
       <label for="vault_name">Vault 名称 <span style="color:#ef4444;">*</span></label>
       <input type="text" id="vault_name" placeholder="例如：Obsidian Vault">
