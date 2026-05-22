@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — Bili Clipper</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f8f9fa;
+      color: #1a1a2e;
+      line-height: 1.7;
+    }
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+    header {
+      margin-bottom: 40px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: #7c3aed;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 20px;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1a1a2e;
+    }
+    .subtitle {
+      font-size: 14px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+    .last-updated {
+      font-size: 13px;
+      color: #94a3b8;
+      margin-top: 8px;
+    }
+    h2 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1a1a2e;
+      margin: 36px 0 12px;
+    }
+    p, li {
+      font-size: 15px;
+      color: #374151;
+    }
+    ul {
+      padding-left: 20px;
+      margin: 8px 0;
+    }
+    li { margin: 4px 0; }
+    .highlight-box {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin: 24px 0;
+    }
+    .highlight-box p {
+      color: #166534;
+      font-weight: 500;
+    }
+    .section { margin-bottom: 8px; }
+    .lang-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 32px;
+    }
+    .lang-btn {
+      padding: 6px 16px;
+      border-radius: 20px;
+      border: 1px solid #e2e8f0;
+      background: white;
+      font-size: 13px;
+      cursor: pointer;
+      color: #64748b;
+      transition: all 0.15s;
+    }
+    .lang-btn.active {
+      background: #7c3aed;
+      border-color: #7c3aed;
+      color: white;
+    }
+    .content-zh, .content-en { display: none; }
+    .content-zh.active, .content-en.active { display: block; }
+    footer {
+      margin-top: 56px;
+      padding-top: 24px;
+      border-top: 1px solid #e2e8f0;
+      font-size: 13px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <div class="logo-icon">📎</div>
+        <div>
+          <h1>Bili Clipper</h1>
+          <div class="subtitle">Chrome Extension Privacy Policy</div>
+        </div>
+      </div>
+      <div class="last-updated">Last updated: May 2026</div>
+    </header>
+
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="switchLang('zh')">中文</button>
+      <button class="lang-btn" onclick="switchLang('en')">English</button>
+    </div>
+
+    <!-- 中文内容 -->
+    <div class="content-zh active">
+      <div class="highlight-box">
+        <p>🔒 Bili Clipper 不收集、不上传、不分享任何用户数据。所有数据仅存储在您本地设备上。</p>
+      </div>
+
+      <div class="section">
+        <h2>我们收集哪些数据</h2>
+        <p>Bili Clipper 仅在您的浏览器本地存储以下信息：</p>
+        <ul>
+          <li><strong>用户设置</strong>：Obsidian Vault 路径、笔记模板等偏好设置</li>
+          <li><strong>Clip 历史</strong>：您手动 Clip 的 B 站视频记录（仅保存在本地）</li>
+        </ul>
+        <p style="margin-top: 12px;">以上数据通过浏览器原生的 <code>chrome.storage.local</code> API 存储，仅限您本人访问，不会离开您的设备。</p>
+      </div>
+
+      <div class="section">
+        <h2>我们不做什么</h2>
+        <ul>
+          <li>不收集任何个人身份信息（姓名、邮箱、账号等）</li>
+          <li>不追踪您的浏览行为或观看记录</li>
+          <li>不向任何第三方服务器上传数据</li>
+          <li>不使用任何分析或广告 SDK</li>
+          <li>不在扩展卸载后保留任何数据</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2>本地服务器</h2>
+        <p>Bili Clipper 需要在您的 Mac 上运行一个本地 Python 服务（端口 27182），用于将字幕写入 Obsidian。此服务：</p>
+        <ul>
+          <li>仅监听 <code>localhost</code>，无法被外部网络访问</li>
+          <li>不发送任何数据到互联网</li>
+          <li>由您手动安装和控制，可随时卸载</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2>数据存储与删除</h2>
+        <p>如需删除所有本地数据，可在 Chrome 扩展设置中点击"清除数据"，或直接卸载扩展。卸载后，<code>chrome.storage.local</code> 中的数据会被浏览器自动清除。</p>
+      </div>
+
+      <div class="section">
+        <h2>联系我们</h2>
+        <p>如有任何隐私相关问题，欢迎通过 <a href="https://github.com/liyachen/bili-clipper/issues" style="color:#7c3aed;">GitHub Issues</a> 联系我们。</p>
+      </div>
+    </div>
+
+    <!-- English content -->
+    <div class="content-en">
+      <div class="highlight-box">
+        <p>🔒 Bili Clipper does not collect, upload, or share any user data. All data stays on your local device only.</p>
+      </div>
+
+      <div class="section">
+        <h2>What We Store</h2>
+        <p>Bili Clipper stores only the following information locally in your browser:</p>
+        <ul>
+          <li><strong>User settings</strong>: your Obsidian Vault path, note templates, and other preferences</li>
+          <li><strong>Clip history</strong>: a local log of videos you have manually clipped</li>
+        </ul>
+        <p style="margin-top: 12px;">All data is stored via the browser-native <code>chrome.storage.local</code> API, accessible only to you, and never leaves your device.</p>
+      </div>
+
+      <div class="section">
+        <h2>What We Do Not Do</h2>
+        <ul>
+          <li>We do not collect any personally identifiable information (name, email, account, etc.)</li>
+          <li>We do not track your browsing behavior or watch history</li>
+          <li>We do not upload data to any remote server</li>
+          <li>We do not use analytics or advertising SDKs</li>
+          <li>We do not retain any data after the extension is uninstalled</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2>Local Server</h2>
+        <p>Bili Clipper requires a lightweight local Python server (port 27182) on your Mac to write subtitles into Obsidian. This server:</p>
+        <ul>
+          <li>Listens on <code>localhost</code> only — not reachable from the internet</li>
+          <li>Does not send any data to the internet</li>
+          <li>Is installed and controlled by you, and can be uninstalled at any time</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2>Data Deletion</h2>
+        <p>To delete all local data, click "Clear Data" in the extension settings, or simply uninstall the extension. Chrome automatically clears <code>chrome.storage.local</code> data upon uninstall.</p>
+      </div>
+
+      <div class="section">
+        <h2>Contact</h2>
+        <p>For any privacy-related questions, please open an issue on <a href="https://github.com/liyachen/bili-clipper/issues" style="color:#7c3aed;">GitHub Issues</a>.</p>
+      </div>
+    </div>
+
+    <footer>
+      Bili Clipper is an open-source Chrome extension. This policy applies to the extension only and does not cover Bilibili (bilibili.com) or any third-party services.
+    </footer>
+  </div>
+
+  <script>
+    function switchLang(lang) {
+      document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.content-zh, .content-en').forEach(el => el.classList.remove('active'));
+      document.querySelector('.content-' + lang).classList.add('active');
+      event.target.classList.add('active');
+    }
+  </script>
+</body>
+</html>

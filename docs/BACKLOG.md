@@ -7,22 +7,6 @@
 
 ## P0 — 发布前必修（上架准备）
 
-### [P0] 扩展图标重新设计
-**模块：** 品牌 / icons/
-**问题：** 现有 icon16/48/128.png 是占位图，不够专业，会影响商店第一印象。
-**需要：** 16×16、48×48、128×128 三个尺寸的 PNG，风格清晰简洁。
-**状态：** `open`
-
----
-
-### [P0] 隐私政策页面
-**模块：** 合规 / Chrome Web Store
-**问题：** 扩展使用 `chrome.storage.local` 存储用户设置和 Clip 历史，Chrome Web Store 要求有隐私政策 URL。
-**改法草案：** 写一页简单的隐私政策（说明存储内容、不上传任何数据），用 GitHub Pages 托管，链接填入商店后台。
-**状态：** `open`
-
----
-
 ### [P0] Chrome Web Store 商店截图
 **模块：** 上架资产
 **问题：** 商店详情页需要截图（1280×800），是用户决定是否安装的主要参考。
@@ -94,6 +78,8 @@
 
 | 项目 | 完成方式 |
 |------|----------|
+| [P0] 扩展图标重新设计 | ChatGPT DALL-E 3 生成紫底白回形针，sips 批量缩放至 16/48/128px |
+| [P0] 隐私政策页面 | docs/privacy-policy.html，GitHub Pages 托管：https://echore.github.io/bili-clipper/privacy-policy.html |
 | [P0] 缺少 Onboarding | welcome.html + background.js onInstalled 监听 |
 | [P0] SPA 跳视频时 clip bar 不更新 | 拦截 pushState/replaceState + popstate |
 | [P1] 默认文件夹 "Raw" 对新用户无意义 | 改默认值为空字符串 |
@@ -107,4 +93,4 @@
 
 ---
 
-*最后更新：2026-05-22 · 新增 P0 发布准备区块（图标、隐私政策、商店截图、文案）*
+*最后更新：2026-05-22 · P0 完成：图标重设计、隐私政策页面（GitHub Pages）；剩余 P0：商店截图、描述文案*
