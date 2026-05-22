@@ -109,17 +109,6 @@ function buildEmbedIframe(bvid, cid, aid) {
   );
 }
 
-async function isServerRunning() {
-  try {
-    const res = await fetch("http://localhost:27182/health", {
-      signal: AbortSignal.timeout(2000),
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
-
 async function getSettings() {
   return new Promise((resolve) => {
     chrome.storage.local.get(
@@ -127,7 +116,6 @@ async function getSettings() {
         vault_name: "",   // display name of the Obsidian vault, e.g. "Obsidian Vault"
         folder: "Raw",
         output: "obsidian",
-        model: "large-v3-turbo",
       },
       resolve
     );
@@ -243,8 +231,14 @@ async function loadVideoDataAndRenderIdle() {
   try {
     const { aid, cid, title, desc, author } = await getVideoInfo(bvid);
     const { subtitles, chapters } = await getPlayerData(aid, cid);
+    if (subtitles.length === 0) {
+      // No CC subtitles — remove the bar silently, nothing to show
+      if (_clipBar) _clipBar.remove();
+      _clipBar = null;
+      return;
+    }
     _videoData = { bvid, aid, cid, title, desc, author, subtitles, chapters };
-    renderIdle(subtitles.length > 0);
+    renderIdle();
   } catch (err) {
     renderError("无法加载视频信息");
     console.error("[Bili Clipper]", err);
@@ -256,10 +250,8 @@ function renderLoading() {
     `<span style="color:#6d28d9;font-size:12px;">📎 Bili Clipper 加载中…</span>`;
 }
 
-function renderIdle(hasSubtitles) {
-  const badge = hasSubtitles
-    ? `<span style="background:#dcfce7;color:#166534;padding:1px 7px;border-radius:4px;font-size:11px;font-weight:600;">CC 字幕 ✓</span>`
-    : `<span style="background:#fef3c7;color:#92400e;padding:1px 7px;border-radius:4px;font-size:11px;font-weight:600;">Whisper 转录</span>`;
+function renderIdle() {
+  const badge = `<span style="background:#dcfce7;color:#166534;padding:1px 7px;border-radius:4px;font-size:11px;font-weight:600;">CC 字幕 ✓</span>`;
 
   _clipBar.style.background = "#f4f0ff";
   _clipBar.style.borderColor = "#7c3aed";
@@ -320,60 +312,17 @@ async function handleClip() {
   const notePath = folder + "/" + filename;
 
   try {
-    if (subtitles.length > 0) {
-      // ── CC subtitle fast path ──────────────────────────────────────────────
-      renderProcessing("正在提取字幕…");
-      const items = await fetchSubtitleItems(subtitles[0].subtitle_url);
-      const subtitleSection = buildSubtitleSection(items, chapters);
-      const note = formatNote(title, subtitleSection, bvid, aid, cid, "cc_subtitle", author, desc);
-      await clipToObsidian(note, title, settings);
+    // ── CC subtitle path ─────────────────────────────────────────────────────
+    renderProcessing("正在提取字幕…");
+    const items = await fetchSubtitleItems(subtitles[0].subtitle_url);
+    const subtitleSection = buildSubtitleSection(items, chapters);
+    const note = formatNote(title, subtitleSection, bvid, aid, cid, "cc_subtitle", author, desc);
+    await clipToObsidian(note, title, settings);
 
-      if (settings.output === "clipboard") {
-        renderSuccess("已复制到剪贴板");
-      } else {
-        renderSuccess("已存入 " + notePath);
-      }
+    if (settings.output === "clipboard") {
+      renderSuccess("已复制到剪贴板");
     } else {
-      // ── Whisper path ───────────────────────────────────────────────────────
-      // Server needed for transcription only. Server does NOT write any files.
-      const ok = await isServerRunning();
-      if (!ok) {
-        renderError("本地服务未运行 — Whisper 转录需要本地服务");
-        return;
-      }
-
-      renderProcessing("转录中（约 2 分钟）…");
-      const res = await fetch("http://localhost:27182/clip", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          bvid,
-          title,
-          config: {
-            folder: settings.folder || "Raw",
-            output: settings.output || "obsidian",
-            model: settings.model || "large-v3-turbo",
-            bvid,
-            aid: String(aid || ""),
-            cid: String(cid || ""),
-            author: author || "",
-            desc: desc || "",
-          },
-        }),
-      });
-      const data = await res.json();
-      if (!data.success) {
-        renderError(data.error || "转录失败");
-        return;
-      }
-
-      await clipToObsidian(data.note, title, settings);
-
-      if (settings.output === "clipboard") {
-        renderSuccess("已复制到剪贴板");
-      } else {
-        renderSuccess("已存入 " + notePath);
-      }
+      renderSuccess("已存入 " + notePath);
     }
   } catch (err) {
     renderError("错误: " + err.message);

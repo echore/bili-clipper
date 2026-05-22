@@ -9,22 +9,13 @@
     .row { margin-bottom: 14px; }
     label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase;
             letter-spacing: 0.05em; color: #6b7280; margin-bottom: 5px; }
-    .input-row { display: flex; gap: 4px; }
     input, select { width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px;
                     font-size: 12px; color: #111; }
     input:focus, select:focus { outline: 2px solid #7c3aed; border-color: transparent; }
-    .btn-auto { padding: 6px 8px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px;
-                font-size: 11px; color: #374151; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
-    .btn-auto:hover { background: #e5e7eb; }
     .seg { display: flex; gap: 4px; }
     .seg button { flex: 1; padding: 5px 2px; border: 1px solid #d1d5db; border-radius: 6px;
                   cursor: pointer; background: white; font-size: 11px; color: #374151; }
     .seg button.active { background: #7c3aed; color: white; border-color: #7c3aed; }
-    .status { display: flex; align-items: center; gap: 8px; padding-top: 12px;
-              border-top: 1px solid #f3f4f6; font-size: 12px; color: #6b7280; }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: #d1d5db; flex-shrink: 0; }
-    .dot.ok { background: #22c55e; }
-    .dot.err { background: #ef4444; }
   </style>
 </head>
 <body>
@@ -32,10 +23,7 @@
 
   <div class="row">
     <label>Vault 名称</label>
-    <div class="input-row">
-      <input type="text" id="vault_name" placeholder="Obsidian Vault">
-      <button class="btn-auto" id="btn-detect">自动检测</button>
-    </div>
+    <input type="text" id="vault_name" placeholder="Obsidian Vault">
   </div>
 
   <div class="row">
@@ -50,20 +38,6 @@
       <button data-value="clipboard">剪贴板</button>
       <button data-value="both">两者</button>
     </div>
-  </div>
-
-  <div class="row">
-    <label>ASR 模型</label>
-    <select id="model">
-      <option value="large-v3-turbo">large-v3-turbo（推荐）</option>
-      <option value="medium">medium</option>
-      <option value="base">base</option>
-    </select>
-  </div>
-
-  <div class="status">
-    <div class="dot" id="dot"></div>
-    <span id="srv-label">检查本地服务…</span>
   </div>
 
   <script src="popup.js"></script>

@@ -368,4 +368,31 @@ content → background 通过 `chrome.runtime.sendMessage` 传递类型化消息
 
 ---
 
-*最后更新：2026-05-22 · 笔记格式升级完成（iframe + 简介 + 章节结构），E2E 验证通过。*
+---
+
+## 架构决策：砍掉转录路径，发布 CC-only 版（2026-05-22）
+
+**背景：**
+尝试将 ASR 后端从 mlx-whisper 迁移到 Qwen3-ASR（`mlx-qwen3-asr` v0.1.1，moona3k 社区移植）。迁移后推理阶段 hang 住（CPU 3.8%，正常 MLX 推理应 >100%），排查确认是该 MLX 移植库本身的 bug，而非 Qwen3-ASR 模型问题。
+
+**关键发现：**
+CC 字幕路径完全不经过服务端——`content.js` 直接调 Bilibili API 拿字幕，格式化后通过 `obsidian://new` URI 写入 Vault，服务端从未参与。服务端只被转录路径用到。
+
+**决策：**
+- 砍掉无字幕视频的转录路径（Whisper + Qwen3-ASR 均不支持）
+- 无字幕视频：不显示 Clip bar，不提示安装模型
+- 整个 `server/` 目录从发布版移除，扩展变为纯客户端
+- Qwen3-ASR 代码保留在 `git tag v0.1-with-asr`，待更成熟的 MLX 方案出现时可直接套壳
+
+**清理范围：**
+- 删除 `server/`（server.py、writer.py、transcriber.py、requirements.txt）
+- 删除 `tests/`（test_writer.py、test_transcriber.py）
+- 简化 `extension/content.js`（移除转录分支 + health check）
+- 简化 `extension/popup.html` + `popup.js`（移除 ASR 模型选择器 + 服务状态）
+- 简化 `extension/background.js`
+- 删除 `install.sh` / `uninstall.sh`（无服务端可装）
+- 更新 README.md
+
+---
+
+*最后更新：2026-05-22 · 决策：砍转录路径，发布 CC-only 纯扩展版本。*
