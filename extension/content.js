@@ -161,8 +161,9 @@ function formatNote(title, subtitleSection, bvid, aid, cid, method, author, desc
 /** Copy note to clipboard and open obsidian://new?clipboard to create the note.
  *
  *  What the user will see: Obsidian opens (or focuses), and a new note appears
- *  at vault/folder/title.md. No dialog, no API key — macOS routes the URI
- *  directly to Obsidian, which reads the content from clipboard.
+ *  at vault/folder/title.md. No dialog, no API key — the OS routes the URI
+ *  to Obsidian (works on macOS, Windows, and Linux), which reads the content
+ *  from clipboard.
  *
  *  If output === "clipboard": copies to clipboard only, does NOT open Obsidian.
  */
