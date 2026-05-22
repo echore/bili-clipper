@@ -24,6 +24,10 @@ class Config(BaseModel):
     output: str = "obsidian"
     model: str = "large-v3-turbo"
     bvid: Optional[str] = None
+    aid: Optional[str] = None
+    cid: Optional[str] = None
+    author: Optional[str] = None
+    desc: Optional[str] = None
 
 
 class ClipRequest(BaseModel):

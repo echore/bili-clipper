@@ -37,20 +37,43 @@ def _split_paragraphs(text: str) -> str:
     return '\n\n'.join(paragraphs)
 
 
+def _build_embed_iframe(bvid: str, cid: str, aid: str) -> str:
+    return (
+        f'<iframe src="https://player.bilibili.com/player.html'
+        f'?bvid={bvid}&cid={cid}&aid={aid}&page=1&autoplay=0" '
+        f'scrolling="no" border="0" frameborder="no" framespacing="0" '
+        f'allowfullscreen="true" style="width:100%;aspect-ratio:16/9;"></iframe>'
+    )
+
+
 def format_note(title: str, transcript: str, config: dict, method: str) -> str:
-    bvid = config.get("bvid", "")
+    bvid = config.get("bvid") or ""
+    aid = config.get("aid") or ""
+    cid = config.get("cid") or ""
+    author = config.get("author") or ""
+    desc = config.get("desc") or ""
     source_url = f"https://www.bilibili.com/video/{bvid}" if bvid else ""
     safe_title = title.replace('"', '\\"')
+    safe_author = author.replace('"', '\\"')
     body = _split_paragraphs(transcript)
 
-    return f"""---
-title: "{safe_title}"
-source: {source_url}
-platform: bilibili
-date: {date.today().isoformat()}
-tags: [transcript, bilibili]
-transcript_method: {method}
----
+    lines = [
+        "---",
+        f'title: "{safe_title}"',
+        f"source: {source_url}",
+        "platform: bilibili",
+        f'author: "{safe_author}"',
+        f"date: {date.today().isoformat()}",
+        "tags: [transcript, bilibili]",
+        f"transcript_method: {method}",
+        "---",
+        "",
+        _build_embed_iframe(bvid, cid, aid),
+        "",
+    ]
 
-{body}
-"""
+    if desc and desc.strip():
+        lines += ["## 简介", "", desc.strip(), ""]
+
+    lines += ["## 字幕", "", body]
+    return "\n".join(lines)
