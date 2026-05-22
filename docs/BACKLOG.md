@@ -65,18 +65,6 @@
 
 ---
 
-### [P2] Vault 自动检测替代方案
-**模块：** UX / Popup
-**背景：** 原"自动检测"功能调用本地服务 `/vaults` 读取 `~/Library/Application Support/obsidian/obsidian.json`。服务端删除后功能消失。
-**约束：** Chrome 扩展无法直接读取本地文件系统。
-**可能的方向：**
-- 用户首次使用时引导手动填写（当前方向，配合 P0 的文字说明）
-- 研究是否可以通过 Native Messaging 读取本地配置（复杂，可能过度设计）
-- Obsidian 插件配合（超出扩展范围）
-**状态：** `open`
-
----
-
 ### [P2] 多字幕语言支持
 **模块：** 功能 / content.js
 **问题：** 当前代码 `subtitles[0]` 直接取第一条字幕，不考虑用户偏好语言。部分视频同时有中文和英文 CC。
@@ -106,6 +94,7 @@
 | [P1] 成功提示显示技术路径 | 改为"已保存到 Obsidian" |
 | [P1] 打开设置按钮被 Chrome 拦截 | 改用 button + sendMessage 绕过内容脚本限制 |
 | [P1] renderError GitHub 链接需验证 | README 第 61 行已有 `## Troubleshooting`，锚点有效 |
+| [P2] Vault 自动检测替代方案 | 手动填写 + welcome 页截图引导已够用，无需自动检测 |
 
 ---
 
