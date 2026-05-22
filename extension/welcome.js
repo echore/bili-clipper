@@ -28,15 +28,6 @@ chrome.storage.local.get(
   }
 );
 
-// ── Vault 名称实时更新示意图 ───────────────────────────────────────────────────
-const vaultInput = document.getElementById("vault_name");
-const vaultPreview = document.getElementById("vault-preview");
-
-function updateVaultPreview(val) {
-  vaultPreview.textContent = val.trim() || "Obsidian Vault";
-}
-
-vaultInput.addEventListener("input", () => updateVaultPreview(vaultInput.value));
 
 // ── 输出目标切换 ───────────────────────────────────────────────────────────────
 document.querySelectorAll("#output-seg button").forEach((btn) => {
