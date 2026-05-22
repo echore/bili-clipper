@@ -5,34 +5,6 @@
 
 ---
 
-## P0 — 发布前必修
-
-### [P0] 缺少 Onboarding：新用户不知道如何开始
-**模块：** UX / Onboarding
-**问题：** 用户装好扩展后没有任何引导。第一次打开 popup 看到三个空白输入框，不知道"Vault 名称"填什么、"目标文件夹"是什么意思、Obsidian 需要做什么准备。核心痛点：Vault 名称填错或留空，扩展仍显示"成功"，笔记存到错误位置，用户完全不知道发生了什么。
-**影响：** 新用户第一次使用极大概率失败。
-**改法草案：**
-- `background.js` 监听 `chrome.runtime.onInstalled`（reason === 'install'），自动打开 `welcome.html`（新 tab）
-- `welcome.html` 只做三件事：
-  1. 一句话说明扩展用途
-  2. 带截图说明"Vault 名称在 Obsidian 左下角"，内嵌输入框让用户直接填写并保存到 `chrome.storage`
-  3. "配置完成 → 去 B 站试试" 按钮
-- `content.js` 的 `handleClip` 保留空 vault 拦截作为安全兜底（显示"请先完成初始设置"并附链接打开 welcome.html）
-**状态：** `done`
-
----
-
-### [P0] SPA 跳视频时 clip bar 数据不更新
-**模块：** UX / content.js
-**问题：** Bilibili 是单页应用，点击推荐视频时 URL 变化但页面不完全刷新。`_videoData` 和 `_clipBar` 停留在旧视频状态。用户在新视频上点 Clip，存进去的是旧视频的字幕和标题。
-**影响：** 用户连续看多个视频时必然触发，存错笔记且不自知。
-**改法草案：**
-- 拦截 `history.pushState` / `history.replaceState` + 监听 `popstate`
-- URL 变化时重置 `_videoData`、移除旧 clip bar、重新调用 `init()`
-**状态：** `done`
-
----
-
 ## P1 — 发布后第一批迭代
 
 ### [P1] 视频教程链接待填入
@@ -40,24 +12,6 @@
 **问题：** `welcome.js` 顶部 `TUTORIAL_URL` 常量目前为空字符串，页面显示"视频教程即将上线"。
 **改法草案：** 录完视频发布后，将链接填入 `extension/welcome.js` 第 4 行的 `TUTORIAL_URL` 常量，重新发布扩展。
 **状态：** `open`
-
----
-
-### [P1] 默认文件夹 "Raw" 对新用户没有意义
-**模块：** UX / Popup
-**问题：** 目标文件夹默认值 "Raw" 是开发者自己的 vault 结构。普通用户 vault 里不一定有这个文件夹，Obsidian 会静默创建，用户不知道笔记跑到哪里。
-**影响：** 轻微困惑，但笔记不会丢失（Obsidian 会自动建文件夹）。
-**改法草案：** 改默认值为空字符串，placeholder 改为 "例如：Raw 或 Notes/Bilibili"；为空时笔记存到 vault 根目录。
-**状态：** `done` — `fix(ux): remove 'Raw' hardcoded default`
-
----
-
-### [P1] 成功提示显示技术路径，对用户没有意义
-**模块：** UX / Clip Bar
-**问题：** 成功后显示 `"已存入 Raw/视频标题.md"`，用户看到的是内部文件路径，不直观。
-**影响：** 小，不影响功能，但显得粗糙。
-**改法草案：** 改为 `"已保存到 Obsidian ✓"` 或 `"已保存到 Obsidian · Raw 文件夹"`。
-**状态：** `done` — 当前代码已输出"已保存到 Obsidian"，无路径
 
 ---
 
@@ -90,18 +44,6 @@
 
 ## P2 — 长期 / 有空再看
 
-### [P2] Qwen3-ASR 转录接回
-**模块：** 功能 / transcriber.py（已保留 shell）
-**背景：** 当前 `mlx-qwen3-asr`（v0.1.1，moona3k 社区移植）推理阶段 hang 住，已暂时禁用转录路径。模型本身（Qwen/Qwen3-ASR）是真实有效的，问题在 MLX 移植库。代码保留在 `git tag v0.1-with-asr`。
-**触发条件：** 以下任一出现时重新评估：
-- `mlx-qwen3-asr` 发布修复版本
-- `mlx-audio`（Blaizzy）的 Qwen3-ASR 支持稳定
-- 官方 Qwen 团队发布 MLX 版本
-**改法草案：** 替换 `transcriber.py` 第 5 行的 import，其余接口不变。
-**状态：** `open`
-
----
-
 ### [P2] 无字幕视频降级：复制标题 + 链接到剪贴板
 **模块：** UX / Clip Bar
 **问题：** 无 CC 字幕的视频目前显示灰色"暂不支持 Clip"提示，用户只能关掉。没有任何降级动作。
@@ -116,6 +58,18 @@
 **问题：** 用户不知道自己 Clip 过哪些视频，重复 Clip 同一个视频也不会提示。
 **影响：** 重度用户会想翻记录；轻度用户无感。
 **改法草案：** 用 `chrome.storage.local` 保存最近 20 条 Clip 记录（标题 + URL + 时间），在 popup 里展示列表。点击可跳转 B 站原视频。
+**状态：** `open`
+
+---
+
+### [P2] Qwen3-ASR 转录接回
+**模块：** 功能 / transcriber.py（已保留 shell）
+**背景：** 当前 `mlx-qwen3-asr`（v0.1.1，moona3k 社区移植）推理阶段 hang 住，已暂时禁用转录路径。模型本身（Qwen/Qwen3-ASR）是真实有效的，问题在 MLX 移植库。代码保留在 `git tag v0.1-with-asr`。
+**触发条件：** 以下任一出现时重新评估：
+- `mlx-qwen3-asr` 发布修复版本
+- `mlx-audio`（Blaizzy）的 Qwen3-ASR 支持稳定
+- 官方 Qwen 团队发布 MLX 版本
+**改法草案：** 替换 `transcriber.py` 第 5 行的 import，其余接口不变。
 **状态：** `open`
 
 ---
@@ -151,4 +105,16 @@
 
 ---
 
-*最后更新：2026-05-22 · P0 全部完成；2 个 P1 标 done；新增 P1×2（Obsidian 反馈、popup 保存反馈）、P2×2（无字幕降级、Clip 历史）*
+## 已完成
+
+| 项目 | 完成方式 |
+|------|----------|
+| [P0] 缺少 Onboarding | welcome.html + background.js onInstalled 监听 |
+| [P0] SPA 跳视频时 clip bar 不更新 | 拦截 pushState/replaceState + popstate |
+| [P1] 默认文件夹 "Raw" 对新用户无意义 | 改默认值为空字符串 |
+| [P1] 成功提示显示技术路径 | 改为"已保存到 Obsidian" |
+| [P1] 打开设置按钮被 Chrome 拦截 | 改用 button + sendMessage 绕过内容脚本限制 |
+
+---
+
+*最后更新：2026-05-22*
