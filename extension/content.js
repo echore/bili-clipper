@@ -14,20 +14,33 @@ async function getVideoInfo(bvid) {
   );
   const data = await res.json();
   if (data.code !== 0) throw new Error(`Bilibili API error: ${data.message}`);
-  return { aid: data.data.aid, cid: data.data.cid, title: data.data.title };
+  return {
+    aid: data.data.aid,
+    cid: data.data.cid,
+    title: data.data.title,
+    desc: data.data.desc || "",
+    author: data.data.owner?.name || "",
+  };
 }
 
-async function getSubtitleList(aid, cid) {
+async function getPlayerData(aid, cid) {
   const res = await fetch(
     `https://api.bilibili.com/x/player/wbi/v2?aid=${aid}&cid=${cid}`,
     { credentials: "include" }
   );
   const data = await res.json();
-  const subtitles = data.data?.subtitle?.subtitles ?? [];
-  return subtitles.filter((s) => s.subtitle_url);
+  const subtitles = (data.data?.subtitle?.subtitles ?? []).filter((s) => s.subtitle_url);
+  const chapters = (data.data?.view_points ?? [])
+    .map((item) => ({
+      title: String(item.content || item.title || "").trim(),
+      from: Number(item.from ?? item.start ?? 0),
+      to: Number(item.to ?? item.end ?? 0),
+    }))
+    .filter((c) => c.title);
+  return { subtitles, chapters };
 }
 
-async function fetchSubtitleText(subtitleUrl) {
+async function fetchSubtitleItems(subtitleUrl) {
   const url = subtitleUrl.startsWith("http://")
     ? subtitleUrl.replace("http://", "https://")
     : subtitleUrl.startsWith("//")
@@ -35,7 +48,59 @@ async function fetchSubtitleText(subtitleUrl) {
     : subtitleUrl;
   const res = await fetch(url);
   const data = await res.json();
-  return data.body.map((item) => item.content).join("\n");
+  return data.body || [];
+}
+
+function formatChapterTimestamp(seconds) {
+  const s = Math.floor(seconds);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+  return `${m}:${String(sec).padStart(2, "0")}`;
+}
+
+function mergeItemsIntoParagraphs(items, gapThreshold = 2) {
+  const paragraphs = [];
+  let current = [];
+  for (let i = 0; i < items.length; i++) {
+    current.push(items[i].content);
+    const gap = i + 1 < items.length ? items[i + 1].from - items[i].to : Infinity;
+    if (gap > gapThreshold) {
+      paragraphs.push(current.join(""));
+      current = [];
+    }
+  }
+  if (current.length) paragraphs.push(current.join(""));
+  return paragraphs.join("\n\n");
+}
+
+function buildSubtitleSection(items, chapters) {
+  if (!items || items.length === 0) return "（暂无字幕）";
+  if (!chapters || chapters.length === 0) {
+    return mergeItemsIntoParagraphs(items);
+  }
+  const lines = [];
+  for (let i = 0; i < chapters.length; i++) {
+    const start = chapters[i].from;
+    const end = i + 1 < chapters.length ? chapters[i + 1].from : Infinity;
+    const slice = items.filter((item) => item.from >= start && item.from < end);
+    if (slice.length === 0) continue;
+    lines.push(`### ${chapters[i].title} \`${formatChapterTimestamp(start)}\``);
+    lines.push("");
+    lines.push(mergeItemsIntoParagraphs(slice));
+    lines.push("");
+  }
+  return lines.join("\n").trim();
+}
+
+function buildEmbedIframe(bvid, cid, aid) {
+  return (
+    `<iframe src="https://player.bilibili.com/player.html` +
+    `?bvid=${bvid}&cid=${cid}&aid=${aid}&page=1&autoplay=0" ` +
+    `scrolling="no" border="0" frameborder="no" framespacing="0" ` +
+    `allowfullscreen="true" style="width:100%;aspect-ratio:16/9;"></iframe>`
+  );
 }
 
 async function isServerRunning() {
@@ -74,21 +139,29 @@ function sanitizeFilename(title) {
     .slice(0, 100);
 }
 
-/** Format transcript as a markdown note with YAML frontmatter. */
-function formatNote(title, transcript, bvid, method) {
+/** Format transcript as a markdown note with YAML frontmatter, embed, and chapter-structured subtitles. */
+function formatNote(title, subtitleSection, bvid, aid, cid, method, author, desc) {
   const today = new Date().toISOString().split("T")[0];
   const sourceUrl = bvid ? `https://www.bilibili.com/video/${bvid}` : "";
-  return `---
-title: "${title.replace(/"/g, '\\"')}"
-source: ${sourceUrl}
-platform: bilibili
-date: ${today}
-tags: [transcript, bilibili]
-transcript_method: ${method}
----
-
-${transcript}
-`;
+  const lines = [
+    `---`,
+    `title: "${title.replace(/"/g, '\\"')}"`,
+    `source: ${sourceUrl}`,
+    `platform: bilibili`,
+    `author: "${(author || "").replace(/"/g, '\\"')}"`,
+    `date: ${today}`,
+    `tags: [transcript, bilibili]`,
+    `transcript_method: ${method}`,
+    `---`,
+    ``,
+    buildEmbedIframe(bvid, cid, aid),
+    ``,
+  ];
+  if (desc && desc.trim()) {
+    lines.push(`## 简介`, ``, desc.trim(), ``, `## 字幕`, ``);
+  }
+  lines.push(subtitleSection);
+  return lines.join("\n");
 }
 
 /** Copy note to clipboard and open obsidian://new?clipboard to create the note.
@@ -162,9 +235,9 @@ async function loadVideoDataAndRenderIdle() {
   const bvid = getBvId();
   if (!bvid) return;
   try {
-    const { aid, cid, title } = await getVideoInfo(bvid);
-    const subtitles = await getSubtitleList(aid, cid);
-    _videoData = { bvid, aid, title, cid, subtitles };
+    const { aid, cid, title, desc, author } = await getVideoInfo(bvid);
+    const { subtitles, chapters } = await getPlayerData(aid, cid);
+    _videoData = { bvid, aid, cid, title, desc, author, subtitles, chapters };
     renderIdle(subtitles.length > 0);
   } catch (err) {
     renderError("无法加载视频信息");
@@ -235,7 +308,7 @@ async function handleClip() {
   _isProcessing = true;
 
   const settings = await getSettings();
-  const { bvid, title, subtitles } = _videoData;
+  const { bvid, aid, cid, title, desc, author, subtitles, chapters } = _videoData;
   const folder = settings.folder || "Raw";
   const filename = sanitizeFilename(title) + ".md";
   const notePath = folder + "/" + filename;
@@ -243,10 +316,10 @@ async function handleClip() {
   try {
     if (subtitles.length > 0) {
       // ── CC subtitle fast path ──────────────────────────────────────────────
-      // No server call needed. Extract subtitle, format note, clip to Obsidian.
       renderProcessing("正在提取字幕…");
-      const transcript = await fetchSubtitleText(subtitles[0].subtitle_url);
-      const note = formatNote(title, transcript, bvid, "cc_subtitle");
+      const items = await fetchSubtitleItems(subtitles[0].subtitle_url);
+      const subtitleSection = buildSubtitleSection(items, chapters);
+      const note = formatNote(title, subtitleSection, bvid, aid, cid, "cc_subtitle", author, desc);
       await clipToObsidian(note, title, settings);
 
       if (settings.output === "clipboard") {
@@ -275,6 +348,10 @@ async function handleClip() {
             output: settings.output || "obsidian",
             model: settings.model || "large-v3-turbo",
             bvid,
+            aid: String(aid || ""),
+            cid: String(cid || ""),
+            author: author || "",
+            desc: desc || "",
           },
         }),
       });
