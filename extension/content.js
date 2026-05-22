@@ -79,7 +79,7 @@ function formatNote(title, transcript, bvid, method) {
   const today = new Date().toISOString().split("T")[0];
   const sourceUrl = bvid ? `https://www.bilibili.com/video/${bvid}` : "";
   return `---
-title: ${title}
+title: "${title.replace(/"/g, '\\"')}"
 source: ${sourceUrl}
 platform: bilibili
 date: ${today}
@@ -205,11 +205,11 @@ function renderProcessing(message) {
     `<span style="color:#4c1d95;">${message}</span></div>`;
 }
 
-function renderSuccess(path) {
+function renderSuccess(message) {
   _clipBar.style.background = "#f0fdf4";
   _clipBar.style.borderColor = "#16a34a";
   _clipBar.innerHTML =
-    `<span style="color:#15803d;">✓ 已存入 ${path}</span>` +
+    `<span style="color:#15803d;">✓ ${message}</span>` +
     `<button id="bili-clipper-reset-btn" style="padding:2px 10px;background:none;` +
     `border:1px solid #16a34a;color:#16a34a;border-radius:4px;font-size:11px;cursor:pointer;">再次 Clip</button>`;
   document.getElementById("bili-clipper-reset-btn").addEventListener("click", () => {
@@ -230,7 +230,7 @@ function renderError(message) {
 // ─── Clip flow ────────────────────────────────────────────────────────────────
 
 async function handleClip() {
-  if (!_videoData) return;
+  if (_isProcessing || !_videoData) return;
   _isProcessing = true;
 
   const settings = await getSettings();
@@ -251,7 +251,7 @@ async function handleClip() {
       if (settings.output === "clipboard") {
         renderSuccess("已复制到剪贴板");
       } else {
-        renderSuccess(notePath);
+        renderSuccess("已存入 " + notePath);
       }
     } else {
       // ── Whisper path ───────────────────────────────────────────────────────
@@ -288,7 +288,7 @@ async function handleClip() {
       if (settings.output === "clipboard") {
         renderSuccess("已复制到剪贴板");
       } else {
-        renderSuccess(notePath);
+        renderSuccess("已存入 " + notePath);
       }
     }
   } catch (err) {
