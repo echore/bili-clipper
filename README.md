@@ -19,7 +19,7 @@ Chrome 扩展，点一下，B 站视频字幕自动进 Obsidian，2 秒完成。
 
 **方式二：手动安装（当前可用）**
 
-1. 下载 [bilibili-to-obsidian.zip](https://github.com/echore/bilibili-to-obsidian/raw/master/bilibili-to-obsidian.zip) 并解压
+1. 下载 [bilibili-to-obsidian.zip](https://github.com/echore/bilibili-to-obsidian/releases/latest/download/bilibili-to-obsidian.zip) 并解压
 2. 打开 `chrome://extensions`，右上角开启**开发者模式**
 3. 点击**加载已解压的扩展程序** → 选择解压后的 `extension/` 文件夹
 
