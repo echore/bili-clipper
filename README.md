@@ -45,10 +45,10 @@ Chrome 扩展，点一下，B 站视频字幕自动进 Obsidian，2 秒完成。
 
 无 CC 字幕的视频不显示 Clip 栏。
 
-![点击 Clip 按钮，自动提取字幕](assets/screenshot1.jpg)
-![点击 Open Obsidian，自动跳转](assets/screenshot2.jpg)
-![笔记自动出现在 Obsidian 指定文件夹](assets/screenshot3.jpg)
-![查看 Clip 历史，直接跳转视频](assets/screenshot4.jpg)
+<img src="assets/screenshot1.jpg" width="600" alt="点击 Clip 按钮，自动提取字幕">
+<img src="assets/screenshot2.jpg" width="600" alt="点击 Open Obsidian，自动跳转">
+<img src="assets/screenshot3.jpg" width="600" alt="笔记自动出现在 Obsidian 指定文件夹">
+<img src="assets/screenshot4.jpg" width="600" alt="查看 Clip 历史，直接跳转视频">
 
 ## 笔记格式
 
