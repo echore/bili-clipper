@@ -9,3 +9,4 @@ docs/
 LOG.md
 .claude/
 extension */
+*.zip

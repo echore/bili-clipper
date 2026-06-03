@@ -203,8 +203,21 @@ function saveClipHistory({ title, url }) {
 // ─── Clip Bar UI ─────────────────────────────────────────────────────────────
 
 let _clipBar = null;
+let _collapsed = false;
 let _isProcessing = false;
 let _videoData = null;
+
+// Expanded bar base style — position:fixed keeps it out of the page DOM flow entirely
+const _BAR_BASE =
+  "position:fixed;top:20px;right:20px;z-index:99999;width:300px;" +
+  "display:flex;align-items:center;justify-content:space-between;" +
+  "padding:10px 14px;border-radius:10px;font-size:13px;" +
+  "font-family:-apple-system,sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.15);gap:8px;";
+
+const _COLLAPSE_BTN =
+  `<button data-bili-collapse style="width:20px;height:20px;border-radius:50%;` +
+  `background:rgba(0,0,0,0.08);border:none;cursor:pointer;font-size:13px;` +
+  `color:#666;flex-shrink:0;line-height:1;">−</button>`;
 
 function ensureSpinStyle() {
   if (!document.getElementById("bili-clipper-style")) {
@@ -217,23 +230,43 @@ function ensureSpinStyle() {
 
 function injectClipBar() {
   if (document.getElementById("bili-clipper-bar")) return;
-
-  const anchor =
-    document.querySelector(".video-info-title") ||
-    document.querySelector("#viewbox_report .title");
-  if (!anchor) return;
+  if (!getBvId()) return;
 
   _clipBar = document.createElement("div");
   _clipBar.id = "bili-clipper-bar";
-  _clipBar.style.cssText =
-    "display:flex;align-items:center;justify-content:space-between;" +
-    "padding:8px 12px;margin:8px 0;border-radius:8px;font-size:13px;" +
-    "font-family:-apple-system,sans-serif;transition:all 0.2s;" +
-    "background:#f4f0ff;border:1px solid #7c3aed;";
+  _clipBar.style.cssText = _BAR_BASE + "background:#f4f0ff;border:1.5px solid #7c3aed;";
 
-  anchor.parentNode.insertBefore(_clipBar, anchor.nextSibling);
+  document.body.appendChild(_clipBar);
+
+  // Event delegation — survives innerHTML replacements in render functions
+  _clipBar.addEventListener("click", (e) => {
+    if (e.target.closest("[data-bili-collapse]")) toggleCollapse();
+  });
+
   renderLoading();
   loadVideoDataAndRenderIdle();
+}
+
+function toggleCollapse() {
+  if (!_collapsed) {
+    _collapsed = true;
+    _clipBar.style.cssText =
+      "position:fixed;top:20px;right:20px;z-index:99999;" +
+      "width:42px;height:42px;border-radius:50%;background:#7c3aed;" +
+      "box-shadow:0 4px 12px rgba(124,58,237,0.4);cursor:pointer;" +
+      "display:flex;align-items:center;justify-content:center;";
+    _clipBar.innerHTML = '<span style="font-size:18px;">📎</span>';
+    _clipBar.addEventListener("click", _expandBar);
+  } else {
+    _expandBar();
+  }
+}
+
+function _expandBar() {
+  _collapsed = false;
+  _clipBar.removeEventListener("click", _expandBar);
+  if (_videoData) renderIdle();
+  else renderLoading();
 }
 
 async function loadVideoDataAndRenderIdle() {
@@ -255,77 +288,85 @@ async function loadVideoDataAndRenderIdle() {
 }
 
 function renderNoSubtitles() {
-  _clipBar.style.background = "#f9fafb";
-  _clipBar.style.borderColor = "#d1d5db";
+  _clipBar.style.cssText = _BAR_BASE + "background:#f9fafb;border:1.5px solid #d1d5db;";
   _clipBar.innerHTML =
     `<div style="display:flex;align-items:center;gap:8px;">` +
     `<span>📎</span>` +
-    `<span style="color:#6b7280;">此视频无 CC 字幕，暂不支持 Clip</span>` +
+    `<span style="color:#6b7280;">此视频无 CC 字幕</span>` +
     `<span style="background:#f3f4f6;color:#9ca3af;padding:1px 7px;border-radius:4px;font-size:11px;border:1px solid #e5e7eb;">无字幕</span>` +
-    `</div>`;
+    `</div>` + _COLLAPSE_BTN;
+
 }
 
 function renderLoading() {
+  _clipBar.style.cssText = _BAR_BASE + "background:#f4f0ff;border:1.5px solid #7c3aed;";
   _clipBar.innerHTML =
-    `<span style="color:#6d28d9;font-size:12px;">📎 Bili Clipper 加载中…</span>`;
+    `<span style="color:#6d28d9;font-size:12px;">📎 Bili Clipper 加载中…</span>` + _COLLAPSE_BTN;
+
 }
 
 function renderIdle() {
   const badge = `<span style="background:#dcfce7;color:#166534;padding:1px 7px;border-radius:4px;font-size:11px;font-weight:600;">CC 字幕 ✓</span>`;
 
-  _clipBar.style.background = "#f4f0ff";
-  _clipBar.style.borderColor = "#7c3aed";
+  _clipBar.style.cssText = _BAR_BASE + "background:#f4f0ff;border:1.5px solid #7c3aed;";
   _clipBar.innerHTML =
     `<div style="display:flex;align-items:center;gap:8px;">` +
     `<span>📎</span><span style="color:#4c1d95;font-weight:500;">Clip to Obsidian</span>${badge}</div>` +
+    `<div style="display:flex;align-items:center;gap:6px;">` +
     `<button id="bili-clipper-btn" style="padding:4px 14px;background:#7c3aed;color:white;` +
-    `border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;">Clip</button>`;
+    `border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;">Clip</button>` +
+    _COLLAPSE_BTN + `</div>`;
 
   document.getElementById("bili-clipper-btn").addEventListener("click", () => {
     if (!_isProcessing) handleClip();
   });
+
 }
 
 function renderProcessing(message) {
   ensureSpinStyle();
-  _clipBar.style.background = "#f4f0ff";
-  _clipBar.style.borderColor = "#7c3aed";
+  _clipBar.style.cssText = _BAR_BASE + "background:#f4f0ff;border:1.5px solid #7c3aed;";
   _clipBar.innerHTML =
     `<div style="display:flex;align-items:center;gap:8px;">` +
     `<div style="width:14px;height:14px;border:2px solid #7c3aed;border-top-color:transparent;` +
     `border-radius:50%;animation:bili-spin 0.8s linear infinite;"></div>` +
-    `<span style="color:#4c1d95;">${message}</span></div>`;
+    `<span style="color:#4c1d95;">${message}</span></div>` + _COLLAPSE_BTN;
+
 }
 
 function renderSuccess(message, subtitle = "") {
-  _clipBar.style.background = "#f0fdf4";
-  _clipBar.style.borderColor = "#16a34a";
   const subtitleHtml = subtitle
-    ? `<span style="color:#6b7280;font-size:11px;">${subtitle}</span>`
+    ? `<span style="color:#6b7280;font-size:11px;flex:1;min-width:0;">${subtitle}</span>`
     : "";
+  _clipBar.style.cssText = _BAR_BASE + "background:#f0fdf4;border:1.5px solid #16a34a;";
   _clipBar.innerHTML =
-    `<span style="color:#15803d;">✓ ${message}</span>` + subtitleHtml;
+    `<span style="color:#15803d;flex-shrink:0;">✓ ${message}</span>` + subtitleHtml + _COLLAPSE_BTN;
+
 }
 
 function renderError(message) {
-  _clipBar.style.background = "#fff1f2";
-  _clipBar.style.borderColor = "#ef4444";
+  _clipBar.style.cssText = _BAR_BASE + "background:#fff1f2;border:1.5px solid #ef4444;";
   _clipBar.innerHTML =
-    `<span style="color:#dc2626;">⚠ ${message}</span>` +
+    `<span style="color:#dc2626;flex:1;min-width:0;">⚠ ${message}</span>` +
+    `<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">` +
     `<a href="https://github.com/echore/bilibili-to-obsidian#troubleshooting" ` +
-    `target="_blank" style="color:#dc2626;font-size:11px;text-decoration:underline;">查看帮助</a>`;
+    `target="_blank" style="color:#dc2626;font-size:11px;text-decoration:underline;">帮助</a>` +
+    _COLLAPSE_BTN + `</div>`;
+
 }
 
 function renderSetupRequired() {
-  _clipBar.style.background = "#fffbeb";
-  _clipBar.style.borderColor = "#f59e0b";
+  _clipBar.style.cssText = _BAR_BASE + "background:#fffbeb;border:1.5px solid #f59e0b;";
   _clipBar.innerHTML =
-    `<span style="color:#92400e;">⚙ 请先完成初始设置</span>` +
+    `<span style="color:#92400e;flex:1;min-width:0;">⚙ 请先完成初始设置</span>` +
+    `<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">` +
     `<button id="bili-open-setup" style="padding:3px 12px;background:#f59e0b;color:white;` +
-    `border:none;border-radius:5px;font-size:11px;cursor:pointer;font-weight:600;">打开设置 →</button>`;
+    `border:none;border-radius:5px;font-size:11px;cursor:pointer;font-weight:600;">打开设置 →</button>` +
+    _COLLAPSE_BTN + `</div>`;
   document.getElementById("bili-open-setup").addEventListener("click", () => {
     chrome.runtime.sendMessage({ type: "OPEN_WELCOME" });
   });
+
 }
 
 // ─── Clip flow ────────────────────────────────────────────────────────────────
@@ -371,17 +412,7 @@ async function handleClip() {
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
 function init() {
-  if (document.querySelector(".video-info-title, #viewbox_report")) {
-    injectClipBar();
-    return;
-  }
-  const obs = new MutationObserver(() => {
-    if (document.querySelector(".video-info-title, #viewbox_report")) {
-      obs.disconnect();
-      injectClipBar();
-    }
-  });
-  obs.observe(document.body, { childList: true, subtree: true });
+  injectClipBar();
 }
 
 // ─── SPA navigation ───────────────────────────────────────────────────────────
@@ -401,6 +432,7 @@ function handleNavigation() {
   if (_clipBar) { _clipBar.remove(); _clipBar = null; }
   _videoData = null;
   _isProcessing = false;
+  _collapsed = false;
 
   init();
 }
