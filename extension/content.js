@@ -61,18 +61,41 @@ function formatChapterTimestamp(seconds) {
 }
 
 function mergeItemsIntoParagraphs(items, gapThreshold = 2) {
+  const HARD_END = /[。？！…]+$/;   // sentence-ending punctuation → always break
+  const SOFT_END = /[，、]+$/;       // comma → break only when text is long enough
+  const MAX_CHARS = 120;             // last-resort hard cap for punctuation-free content
+  const SOFT_MIN = 40;               // minimum chars before a comma triggers a break
+
   const paragraphs = [];
   let current = [];
+  let paraStart = null;
+
   for (let i = 0; i < items.length; i++) {
-    current.push(items[i].content);
-    const gap = i + 1 < items.length ? items[i + 1].from - items[i].to : Infinity;
-    if (gap > gapThreshold) {
-      paragraphs.push(current.join(""));
+    const item = items[i];
+    if (current.length === 0) paraStart = item.from;
+    current.push(item.content);
+
+    const text = current.join("");
+    const gap = i + 1 < items.length ? items[i + 1].from - item.to : Infinity;
+
+    const shouldBreak =
+      HARD_END.test(text) ||                          // 1. sentence end
+      gap > gapThreshold ||                           // 2. natural pause
+      (text.length >= SOFT_MIN && SOFT_END.test(item.content)) || // 3. comma after enough text
+      text.length >= MAX_CHARS;                       // 4. hard cap fallback
+
+    if (shouldBreak) {
+      paragraphs.push({ time: paraStart, text });
       current = [];
+      paraStart = null;
     }
   }
-  if (current.length) paragraphs.push(current.join(""));
-  return paragraphs.join("\n\n");
+
+  if (current.length) paragraphs.push({ time: paraStart, text: current.join("") });
+
+  return paragraphs
+    .map(p => `**${formatChapterTimestamp(p.time)}** · ${p.text}`)
+    .join("\n\n");
 }
 
 function buildSubtitleSection(items, chapters) {

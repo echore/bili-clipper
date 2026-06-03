@@ -28,6 +28,13 @@ chrome.storage.local.get(
 );
 
 
+// ── 默认 Vault 名称快填 ────────────────────────────────────────────────────────
+document.getElementById("fill-default-vault").addEventListener("click", () => {
+  const input = document.getElementById("vault_name");
+  input.value = "Obsidian Vault";
+  input.focus();
+});
+
 // ── 输出目标切换 ───────────────────────────────────────────────────────────────
 document.querySelectorAll("#output-seg button").forEach((btn) => {
   btn.addEventListener("click", () => {

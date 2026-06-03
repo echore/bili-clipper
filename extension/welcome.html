@@ -243,7 +243,15 @@
 
       <label for="vault_name">Vault 名称 <span style="color:#ef4444;">*</span></label>
       <input type="text" id="vault_name" placeholder="例如：Obsidian Vault">
-      <p class="hint" style="margin-top:5px;margin-bottom:0;">区分大小写，需与 Obsidian 左下角显示的名称完全一致</p>
+      <p style="margin-top:6px;margin-bottom:0;font-size:12px;color:#9ca3af;">
+        大多数用户的默认名称是
+        <button id="fill-default-vault"
+          style="display:inline;background:none;border:none;padding:0;
+                 color:#7c3aed;font-size:12px;cursor:pointer;text-decoration:underline;
+                 text-underline-offset:2px;">Obsidian Vault</button>
+        — 点击自动填入
+      </p>
+      <p class="hint" style="margin-top:4px;margin-bottom:0;">区分大小写，需与 Obsidian 左下角显示的名称完全一致</p>
 
       <label for="folder">笔记保存到哪个文件夹</label>
       <input type="text" id="folder" placeholder="例如：Raw（留空则存到 Vault 根目录）">
