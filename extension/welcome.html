@@ -188,13 +188,24 @@
     <div class="header">
       <div class="header-icon">📎</div>
       <h1>欢迎使用 Bili Clipper</h1>
-      <p>在 B 站 CC 字幕视频上，一键将字幕保存为 Obsidian 笔记。<br>完成下方设置只需 1 分钟。</p>
+      <p>在 B 站 CC 字幕视频上，一键将字幕保存为笔记。<br>完成下方设置只需 1 分钟。</p>
     </div>
 
-    <!-- Step 1: Configure -->
+    <!-- Step 1: Choose tool -->
     <div class="card">
+      <div class="card-title"><span class="step-badge">1</span> 选择你的笔记工具</div>
+      <p style="font-size:13px;color:#374151;margin-bottom:10px;">Clip 的字幕笔记要保存到哪里？(可多选)</p>
+      <div class="checks" id="dest-checks">
+        <label class="check"><input type="checkbox" value="obsidian" checked> Obsidian</label>
+        <label class="check"><input type="checkbox" value="notion"> Notion</label>
+        <label class="check"><input type="checkbox" value="clipboard"> 仅剪贴板</label>
+      </div>
+    </div>
+
+    <!-- Step 2: Configure Obsidian -->
+    <div class="card" id="obsidian-setup">
       <div class="card-title">
-        <span class="step-badge">1</span>
+        <span class="step-badge">2</span>
         配置你的 Obsidian Vault
       </div>
 
@@ -247,21 +258,82 @@
 
       <label for="folder">笔记保存到哪个文件夹</label>
       <input type="text" id="folder" placeholder="例如：Raw（留空则存到 Vault 根目录）">
+    </div>
 
-      <label>输出到（可多选）</label>
-      <div class="checks" id="dest-checks">
-        <label class="check"><input type="checkbox" value="obsidian" checked> Obsidian</label>
-        <label class="check"><input type="checkbox" value="notion"> Notion</label>
-        <label class="check"><input type="checkbox" value="clipboard"> 剪贴板</label>
+    <!-- Notion setup -->
+    <div class="card" id="notion-setup" style="display:none;">
+      <div class="card-title"><span class="step-badge">2</span> 配置你的 Notion</div>
+
+      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px;">
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+          <div style="background:#7c3aed;color:white;width:20px;height:20px;border-radius:50%;
+            display:flex;align-items:center;justify-content:center;font-size:11px;
+            font-weight:700;flex-shrink:0;margin-top:2px;">1</div>
+          <div>
+            <p style="font-size:12px;color:#374151;margin-bottom:6px;">
+              打开 <a href="https://www.notion.so/profile/integrations" target="_blank"
+              style="color:#7c3aed;">Notion Connections</a> 页面，点 <strong>New connection</strong>，
+              Authentication method 选 <strong>Access token</strong>，创建后复制
+              <strong>ntn_</strong> 开头的 token
+            </p>
+            <!-- TODO: screenshot assets/notion-step1.png (capture before release) -->
+          </div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+          <div style="background:#7c3aed;color:white;width:20px;height:20px;border-radius:50%;
+            display:flex;align-items:center;justify-content:center;font-size:11px;
+            font-weight:700;flex-shrink:0;margin-top:2px;">2</div>
+          <div>
+            <p style="font-size:12px;color:#374151;margin-bottom:6px;">
+              准备一个存字幕笔记的 database（任意空 database 都行，缺少的字段会在第一次 Clip 时自动创建），
+              在它的页面右上 <strong>···</strong> → <strong>Connections</strong> → 连接到你刚创建的 connection
+            </p>
+            <!-- TODO: screenshot assets/notion-step2.png (capture before release) -->
+          </div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+          <div style="background:#7c3aed;color:white;width:20px;height:20px;border-radius:50%;
+            display:flex;align-items:center;justify-content:center;font-size:11px;
+            font-weight:700;flex-shrink:0;margin-top:2px;">3</div>
+          <div>
+            <p style="font-size:12px;color:#374151;margin-bottom:6px;">
+              在下面贴入 token，点「连接」，从列表里选中你的 database
+            </p>
+            <!-- TODO: screenshot assets/notion-step3.png (capture before release) -->
+          </div>
+        </div>
       </div>
 
+      <label for="notion_token">Notion Token <span style="color:#ef4444;">*</span></label>
+      <div style="display:flex;gap:8px;">
+        <input type="password" id="notion_token" placeholder="ntn_ 开头的 access token" style="flex:1;">
+        <button id="notion-connect" type="button" style="padding:8px 16px;background:#7c3aed;color:white;
+          border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0;">连接</button>
+      </div>
+      <p id="notion-status" style="margin-top:6px;font-size:12px;color:#9ca3af;"></p>
+
+      <div id="notion-db-row" style="display:none;">
+        <label for="notion_database_select">保存到哪个 database <span style="color:#ef4444;">*</span></label>
+        <select id="notion_database_select" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;
+          border-radius:7px;font-size:13px;color:#111;"></select>
+      </div>
+
+      <details style="margin-top:12px;">
+        <summary style="font-size:12px;color:#9ca3af;cursor:pointer;">高级：手动粘贴 database 链接</summary>
+        <input type="text" id="notion_database" placeholder="https://notion.so/xxxx…" style="margin-top:8px;">
+        <p id="notion-db-hint" style="margin-top:6px;font-size:12px;color:#9ca3af;"></p>
+      </details>
+    </div>
+
+    <!-- Save button -->
+    <div class="card" style="padding:16px 28px;">
       <button class="save-btn" id="save-btn">保存设置</button>
     </div>
 
-    <!-- Step 2: How to use -->
+    <!-- Step 3: How to use -->
     <div class="card">
       <div class="card-title">
-        <span class="step-badge">2</span>
+        <span class="step-badge">3</span>
         开始使用
       </div>
       <ul class="steps-list">
@@ -275,7 +347,7 @@
         </li>
         <li>
           <span class="num">3</span>
-          点击 <strong>Clip</strong> 按钮，Obsidian 自动打开并创建笔记
+          点击 <strong>Clip</strong> 按钮，笔记自动保存到你选择的工具
         </li>
         <li>
           <span class="num">4</span>

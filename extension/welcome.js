@@ -22,9 +22,13 @@ const LEGACY_OUTPUT_MAP = {
   both: ["obsidian", "clipboard"],
 };
 
+let _savedDatabaseId = "";
+
 chrome.storage.local.get(
-  { vault_name: "", folder: "", output: "", destinations: null },
+  { vault_name: "", folder: "", output: "", destinations: null,
+    notion_token: "", notion_database_id: "", notion_database_title: "" },
   (s) => {
+    _savedDatabaseId = s.notion_database_id || "";
     document.getElementById("vault_name").value = s.vault_name;
     document.getElementById("folder").value = s.folder;
     const dests = Array.isArray(s.destinations)
@@ -33,9 +37,28 @@ chrome.storage.local.get(
     document.querySelectorAll("#dest-checks input").forEach((cb) => {
       cb.checked = dests.includes(cb.value);
     });
+    document.getElementById("notion_token").value = s.notion_token;
+    if (s.notion_database_title) {
+      const st = document.getElementById("notion-status");
+      st.textContent = "当前：" + s.notion_database_title;
+    }
+    updateSetupCards();
   }
 );
 
+// ── Setup card visibility ──────────────────────────────────────────────────────
+function updateSetupCards() {
+  const checked = (v) =>
+    document.querySelector(`#dest-checks input[value="${v}"]`).checked;
+  document.getElementById("obsidian-setup").style.display =
+    checked("obsidian") ? "" : "none";
+  document.getElementById("notion-setup").style.display =
+    checked("notion") ? "" : "none";
+}
+
+document.querySelectorAll("#dest-checks input").forEach((cb) =>
+  cb.addEventListener("change", updateSetupCards)
+);
 
 // ── 默认 Vault 名称快填 ────────────────────────────────────────────────────────
 document.getElementById("fill-default-vault").addEventListener("click", () => {
@@ -44,12 +67,104 @@ document.getElementById("fill-default-vault").addEventListener("click", () => {
   input.focus();
 });
 
+// ── Notion connect + database picker ─────────────────────────────────────────
+
+/** Accepts a full Notion URL or bare id; returns 32-hex id or "". */
+function extractDatabaseId(input) {
+  const m = (input || "").replace(/-/g, "").match(/[0-9a-f]{32}/i);
+  return m ? m[0].toLowerCase() : "";
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, (ch) => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]
+  ));
+}
+
+let _dbItems = [];
+
+document.getElementById("notion-connect").addEventListener("click", async () => {
+  const token = document.getElementById("notion_token").value.trim();
+  const status = document.getElementById("notion-status");
+  status.textContent = "连接中…";
+  status.style.color = "#9ca3af";
+  let resp;
+  try {
+    resp = await chrome.runtime.sendMessage({ type: "SEARCH_NOTION_DATABASES", token });
+  } catch (err) {
+    status.textContent = "连接失败";
+    status.style.color = "#ef4444";
+    return;
+  }
+  if (!resp?.ok) {
+    status.textContent = resp?.detail || "连接失败";
+    status.style.color = "#ef4444";
+    return;
+  }
+  if (resp.items.length === 0) {
+    status.textContent = "未找到 database — 请先完成第 2 步（把 database 连接给 connection）";
+    status.style.color = "#ef4444";
+    return;
+  }
+  _dbItems = resp.items;
+  status.textContent = `✓ 已连接，找到 ${resp.items.length} 个 database`;
+  status.style.color = "#16a34a";
+  const select = document.getElementById("notion_database_select");
+  select.innerHTML = _dbItems
+    .map((d, i) => `<option value="${i}">${escapeHtml(d.title)}</option>`)
+    .join("");
+  document.getElementById("notion-db-row").style.display = "";
+  const idx = _dbItems.findIndex((d) => d.databaseId === _savedDatabaseId);
+  if (idx !== -1) {
+    select.value = String(idx);
+  } else {
+    saveSelectedDatabase();
+  }
+});
+
+function saveSelectedDatabase() {
+  const i = Number(document.getElementById("notion_database_select").value || 0);
+  const d = _dbItems[i];
+  if (!d) return;
+  _savedDatabaseId = d.databaseId;
+  chrome.storage.local.set({
+    notion_database_id: d.databaseId,
+    notion_data_source_id: d.dataSourceId,
+    notion_database_title: d.title,
+  });
+  const status = document.getElementById("notion-status");
+  status.textContent = "当前：" + d.title;
+  status.style.color = "#9ca3af";
+}
+
+document.getElementById("notion_database_select").addEventListener("change", saveSelectedDatabase);
+
+// ── Advanced fallback: manual database URL ────────────────────────────────────
+
+document.getElementById("notion_database").addEventListener("input", () => {
+  const raw = document.getElementById("notion_database").value.trim();
+  const id = extractDatabaseId(raw);
+  const hint = document.getElementById("notion-db-hint");
+  if (raw && !id) {
+    hint.textContent = "未识别到有效 ID，请粘贴 database 页面链接";
+    hint.style.color = "#ef4444";
+    return;
+  }
+  hint.textContent = id ? `已识别 ID：${id.slice(0, 8)}…` : "";
+  hint.style.color = "#9ca3af";
+  if (id) {
+    _savedDatabaseId = id;
+    chrome.storage.local.set({ notion_database_id: id, notion_data_source_id: "", notion_database_title: "" });
+  }
+});
+
 // ── 保存设置 ───────────────────────────────────────────────────────────────────
 document.getElementById("save-btn").addEventListener("click", () => {
   const vault_name = document.getElementById("vault_name").value.trim();
   const folder = document.getElementById("folder").value.trim();
   const destinations = [...document.querySelectorAll("#dest-checks input:checked")]
     .map((cb) => cb.value);
+  const notion_token = document.getElementById("notion_token").value.trim();
 
   // Vault 名称仅在勾选 Obsidian 时必填
   if (destinations.includes("obsidian") && !vault_name) {
@@ -64,7 +179,23 @@ document.getElementById("save-btn").addEventListener("click", () => {
     return;
   }
 
-  chrome.storage.local.set({ vault_name, folder, destinations }, () => {
+  // Notion token + database 仅在勾选 Notion 时必填
+  if (destinations.includes("notion") && (!notion_token || !_savedDatabaseId)) {
+    const tokenInput = document.getElementById("notion_token");
+    tokenInput.focus();
+    tokenInput.style.borderColor = "#ef4444";
+    tokenInput.style.boxShadow = "0 0 0 3px rgba(239,68,68,0.15)";
+    setTimeout(() => {
+      tokenInput.style.borderColor = "";
+      tokenInput.style.boxShadow = "";
+    }, 2000);
+    const status = document.getElementById("notion-status");
+    status.textContent = "请先填写 Token 并连接选择 database";
+    status.style.color = "#ef4444";
+    return;
+  }
+
+  chrome.storage.local.set({ vault_name, folder, destinations, notion_token }, () => {
     const toast = document.getElementById("toast");
     toast.classList.add("show");
     setTimeout(() => toast.classList.remove("show"), 2500);
