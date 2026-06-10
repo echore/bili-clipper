@@ -206,7 +206,7 @@ function formatNoteBody(subtitleSection, desc, embed) {
 
 // ─── Destination writers ─────────────────────────────────────────────────────
 // Each writer: (payload, settings) → Promise<{ok: boolean, detail?: string}>
-// payload: { title, meta, obsidianNote }  (notionBody added in Phase 2)
+// payload: { title, meta, obsidianNote, notionBody }
 
 async function writeToClipboard(payload) {
   await navigator.clipboard.writeText(payload.obsidianNote);
@@ -229,7 +229,16 @@ async function writeToObsidian(payload, settings) {
   return { ok: true };
 }
 
-const WRITERS = { obsidian: writeToObsidian, clipboard: writeToClipboard };
+async function writeToNotion(payload) {
+  const resp = await chrome.runtime.sendMessage({
+    type: "CLIP_TO_NOTION",
+    meta: payload.meta,
+    body: payload.notionBody,
+  });
+  return resp || { ok: false, detail: "后台无响应" };
+}
+
+const WRITERS = { obsidian: writeToObsidian, clipboard: writeToClipboard, notion: writeToNotion };
 const DEST_LABELS = { obsidian: "Obsidian", notion: "Notion", clipboard: "剪贴板" };
 
 // ─── Clip history ────────────────────────────────────────────────────────────
@@ -435,9 +444,11 @@ async function handleClip() {
   const dests = settings.destinations.filter((d) => WRITERS[d]);
 
   const needsObsidianSetup = dests.includes("obsidian") && !settings.vault_name;
+  const needsNotionSetup =
+    dests.includes("notion") && (!settings.notion_token || !settings.notion_database_id);
   // dests can be empty when destinations contains only not-yet-registered writers
   // (e.g. "notion" before Phase 2) — surfaced as setup-required rather than crashing
-  if (dests.length === 0 || needsObsidianSetup) {
+  if (dests.length === 0 || needsObsidianSetup || needsNotionSetup) {
     renderSetupRequired();
     return;
   }
@@ -456,6 +467,7 @@ async function handleClip() {
       obsidianNote:
         formatFrontmatter(meta) + "\n\n" +
         formatNoteBody(subtitleSection, desc, buildEmbedIframe(bvid, cid, aid)),
+      notionBody: formatNoteBody(subtitleSection, desc, meta.sourceUrl),
     };
 
     const results = [];
