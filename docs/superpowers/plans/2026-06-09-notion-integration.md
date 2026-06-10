@@ -6,7 +6,7 @@
 
 **Architecture:** 先把 `output` 枚举重构为 `destinations` 多选数组 + 统一 writer 接口（行为不变的纯重构），再以"第三个 writer"的形式接入 Notion——content.js 发消息给 background.js，由 background 调 Notion API（data source discovery → schema 映射 → 建页 → PATCH Markdown）。最后做 welcome 双目标分叉引导和文档同步。
 
-**Tech Stack:** Chrome Manifest V3、vanilla JS、Notion REST API（`Notion-Version: 2025-09-03`，Markdown 端点）、`chrome.storage.local`。
+**Tech Stack:** Chrome Manifest V3、vanilla JS、Notion REST API（`Notion-Version: 2026-03-11`，Markdown 端点）、`chrome.storage.local`。
 
 **Spec:** `docs/superpowers/specs/2026-06-09-notion-integration-design.md`
 
@@ -39,7 +39,7 @@ export NOTION_TOKEN="ntn_xxx"   # 用户提供，勿写入文件
 export DB_ID="<从 URL 提取的 32 位 hex>"
 curl -s "https://api.notion.com/v1/databases/$DB_ID" \
   -H "Authorization: Bearer $NOTION_TOKEN" \
-  -H "Notion-Version: 2025-09-03" | head -c 2000
+  -H "Notion-Version: 2026-03-11" | head -c 2000
 ```
 
 预期：响应含 `data_sources` 数组，记录 `data_sources[0].id` 为 `$DS_ID`。
@@ -51,7 +51,7 @@ curl -s "https://api.notion.com/v1/databases/$DB_ID" \
 export DS_ID="<上一步拿到的 id>"
 curl -s "https://api.notion.com/v1/data_sources/$DS_ID" \
   -H "Authorization: Bearer $NOTION_TOKEN" \
-  -H "Notion-Version: 2025-09-03" | head -c 2000
+  -H "Notion-Version: 2026-03-11" | head -c 2000
 ```
 
 预期：响应含 `properties` 对象，确认各列的 `type` 字段值（title/url/rich_text/date/multi_select）。
@@ -61,7 +61,7 @@ curl -s "https://api.notion.com/v1/data_sources/$DS_ID" \
 ```bash
 curl -s -X POST "https://api.notion.com/v1/pages" \
   -H "Authorization: Bearer $NOTION_TOKEN" \
-  -H "Notion-Version: 2025-09-03" \
+  -H "Notion-Version: 2026-03-11" \
   -H "Content-Type: application/json" \
   -d '{
     "parent": {"type": "data_source_id", "data_source_id": "'$DS_ID'"},
@@ -81,7 +81,7 @@ curl -s -X POST "https://api.notion.com/v1/pages" \
 ```bash
 curl -s -X PATCH "https://api.notion.com/v1/pages/$PAGE_ID/markdown" \
   -H "Authorization: Bearer $NOTION_TOKEN" \
-  -H "Notion-Version: 2025-09-03" \
+  -H "Notion-Version: 2026-03-11" \
   -H "Content-Type: application/json" \
   -d '{
     "command": "replace_content",
@@ -565,7 +565,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 // ─── Notion API client ───────────────────────────────────────────────────────
 
 const NOTION_API = "https://api.notion.com/v1";
-const NOTION_VERSION = "2025-09-03"; // pinned; verified by spike (docs/superpowers/spikes/)
+const NOTION_VERSION = "2026-03-11"; // pinned; verified by spike (docs/superpowers/spikes/)
 
 async function notionFetch(path, options, token) {
   let res;
