@@ -133,16 +133,30 @@ function buildEmbedIframe(bvid, cid, aid) {
 }
 
 async function getSettings() {
-  return new Promise((resolve) => {
+  const s = await new Promise((resolve) =>
     chrome.storage.local.get(
       {
-        vault_name: "",   // display name of the Obsidian vault, e.g. "Obsidian Vault"
+        vault_name: "",
         folder: "",
-        output: "obsidian",
+        output: "",            // legacy enum, kept for migration only
+        destinations: null,    // array of "obsidian" | "notion" | "clipboard"
+        notion_token: "",
+        notion_database_id: "",
       },
       resolve
-    );
-  });
+    )
+  );
+  if (!Array.isArray(s.destinations)) {
+    // Read-time fallback from the legacy `output` enum. Not persisted here:
+    // the popup/welcome UI owns writing `destinations` once it migrates.
+    const legacyMap = {
+      obsidian: ["obsidian"],
+      clipboard: ["clipboard"],
+      both: ["obsidian", "clipboard"],
+    };
+    s.destinations = legacyMap[s.output] || ["obsidian"];
+  }
+  return s;
 }
 
 // ─── Note formatting helpers ─────────────────────────────────────────────────
@@ -156,62 +170,67 @@ function sanitizeFilename(title) {
     .slice(0, 100);
 }
 
-/** Format transcript as a markdown note with YAML frontmatter, embed, and chapter-structured subtitles. */
-function formatNote(title, subtitleSection, bvid, aid, cid, method, author, desc) {
-  const today = new Date().toISOString().split("T")[0];
-  const sourceUrl = bvid ? `https://www.bilibili.com/video/${bvid}` : "";
-  const lines = [
+/** Metadata shared by all destinations. */
+function buildNoteMeta(title, bvid, author, method) {
+  return {
+    title,
+    sourceUrl: bvid ? `https://www.bilibili.com/video/${bvid}` : "",
+    author: author || "",
+    date: new Date().toISOString().split("T")[0],
+    tags: ["transcript", "bilibili"],
+    method,
+  };
+}
+
+function formatFrontmatter(meta) {
+  return [
     `---`,
-    `title: "${title.replace(/"/g, '\\"')}"`,
-    `source: ${sourceUrl}`,
+    `title: "${meta.title.replace(/"/g, '\\"')}"`,
+    `source: ${meta.sourceUrl}`,
     `platform: bilibili`,
-    `author: "${(author || "").replace(/"/g, '\\"')}"`,
-    `date: ${today}`,
-    `tags: [transcript, bilibili]`,
-    `transcript_method: ${method}`,
+    `author: "${meta.author.replace(/"/g, '\\"')}"`,
+    `date: ${meta.date}`,
+    `tags: [${meta.tags.join(", ")}]`,
+    `transcript_method: ${meta.method}`,
     `---`,
-    ``,
-    buildEmbedIframe(bvid, cid, aid),
-    ``,
-  ];
-  if (desc && desc.trim()) {
-    lines.push(`## 简介`, ``, desc.trim(), ``);
-  }
+  ].join("\n");
+}
+
+/** Body shared by all destinations; `embed` is iframe HTML (Obsidian) or a plain URL (Notion). */
+function formatNoteBody(subtitleSection, desc, embed) {
+  const lines = [embed, ``];
+  if (desc && desc.trim()) lines.push(`## 简介`, ``, desc.trim(), ``);
   lines.push(`## 字幕`, ``, subtitleSection);
   return lines.join("\n");
 }
 
-/** Copy note to clipboard and open obsidian://new?clipboard to create the note.
- *
- *  What the user will see: Obsidian opens (or focuses), and a new note appears
- *  at vault/folder/title.md. No dialog, no API key — the OS routes the URI
- *  to Obsidian (works on macOS, Windows, and Linux), which reads the content
- *  from clipboard.
- *
- *  If output === "clipboard": copies to clipboard only, does NOT open Obsidian.
- */
-async function clipToObsidian(noteContent, title, settings) {
-  // Always copy to clipboard first (used as transport to Obsidian, or as final output)
-  await navigator.clipboard.writeText(noteContent);
+// ─── Destination writers ─────────────────────────────────────────────────────
+// Each writer: (payload, settings) → Promise<{ok: boolean, detail?: string}>
+// payload: { title, meta, obsidianNote }  (notionBody added in Phase 2)
 
-  if (settings.output === "clipboard") return;  // clipboard-only mode
+async function writeToClipboard(payload) {
+  await navigator.clipboard.writeText(payload.obsidianNote);
+  return { ok: true };
+}
 
+async function writeToObsidian(payload, settings) {
+  // Obsidian URI reads content from clipboard (&clipboard) — clipboard is the transport
+  await navigator.clipboard.writeText(payload.obsidianNote);
   const folder = (settings.folder || "").trim().replace(/^\/+|\/+$/g, "");
-  const vaultName = settings.vault_name || "";
-  const filename = sanitizeFilename(title) + ".md";
+  const filename = sanitizeFilename(payload.title) + ".md";
   const notePath = folder ? folder + "/" + filename : filename;
-
-  // Build obsidian://new URI
-  // &clipboard tells Obsidian to read content from clipboard (no URL length limit)
   const params = new URLSearchParams();
-  if (vaultName) params.set("vault", vaultName);
+  if (settings.vault_name) params.set("vault", settings.vault_name);
   params.set("file", notePath);
-
   const link = document.createElement("a");
   // Obsidian URI handler requires %20 for spaces, not + (URLSearchParams default)
   link.href = "obsidian://new?" + params.toString().replace(/\+/g, "%20") + "&clipboard";
   link.click();
+  return { ok: true };
 }
+
+const WRITERS = { obsidian: writeToObsidian, clipboard: writeToClipboard };
+const DEST_LABELS = { obsidian: "Obsidian", notion: "Notion", clipboard: "剪贴板" };
 
 // ─── Clip history ────────────────────────────────────────────────────────────
 
@@ -378,6 +397,21 @@ function renderError(message) {
 
 }
 
+function renderResults(results) {
+  const summary = results
+    .map((r) => `${r.ok ? "✓" : "✗"} ${DEST_LABELS[r.dest]}`)
+    .join("　");
+  const failed = results.filter((r) => !r.ok);
+  if (failed.length === 0) {
+    const hint = results.some((r) => r.dest === "obsidian")
+      ? "如未自动打开，请启动 Obsidian 或检查 Vault 名称是否正确"
+      : "";
+    renderSuccess(summary, hint);
+  } else {
+    renderError(`${summary} — ${failed[0].detail || "写入失败"}`);
+  }
+}
+
 function renderSetupRequired() {
   _clipBar.style.cssText = _BAR_BASE + "background:#fffbeb;border:1.5px solid #f59e0b;";
   _clipBar.innerHTML =
@@ -398,33 +432,45 @@ async function handleClip() {
   if (_isProcessing || !_videoData) return;
 
   const settings = await getSettings();
+  const dests = settings.destinations.filter((d) => WRITERS[d]);
 
-  // Guard: vault name required for Obsidian output
-  if (!settings.vault_name && settings.output !== "clipboard") {
+  const needsObsidianSetup = dests.includes("obsidian") && !settings.vault_name;
+  // dests can be empty when destinations contains only not-yet-registered writers
+  // (e.g. "notion" before Phase 2) — surfaced as setup-required rather than crashing
+  if (dests.length === 0 || needsObsidianSetup) {
     renderSetupRequired();
     return;
   }
 
   _isProcessing = true;
   const { bvid, aid, cid, title, desc, author, subtitles, chapters } = _videoData;
-  const folder = (settings.folder || "").trim().replace(/^\/+|\/+$/g, "");
-  const filename = sanitizeFilename(title) + ".md";
-  const notePath = folder ? folder + "/" + filename : filename;
 
   try {
-    // ── CC subtitle path ─────────────────────────────────────────────────────
     renderProcessing("正在提取字幕…");
     const items = await fetchSubtitleItems(subtitles[0].subtitle_url);
     const subtitleSection = buildSubtitleSection(items, chapters);
-    const note = formatNote(title, subtitleSection, bvid, aid, cid, "cc_subtitle", author, desc);
-    await clipToObsidian(note, title, settings);
+    const meta = buildNoteMeta(title, bvid, author, "cc_subtitle");
+    const payload = {
+      title,
+      meta,
+      obsidianNote:
+        formatFrontmatter(meta) + "\n\n" +
+        formatNoteBody(subtitleSection, desc, buildEmbedIframe(bvid, cid, aid)),
+    };
 
-    if (settings.output === "clipboard") {
-      renderSuccess("已复制到剪贴板");
-    } else {
-      renderSuccess("已保存到 Obsidian", "如未自动打开，请启动 Obsidian 或检查 Vault 名称是否正确");
+    const results = [];
+    for (const dest of dests) {
+      renderProcessing(`正在写入 ${DEST_LABELS[dest]}…`);
+      try {
+        results.push({ dest, ...(await WRITERS[dest](payload, settings)) });
+      } catch (err) {
+        results.push({ dest, ok: false, detail: err.message });
+      }
     }
-    saveClipHistory({ title, url: `https://www.bilibili.com/video/${bvid}` });
+    renderResults(results);
+    if (results.some((r) => r.ok)) {
+      saveClipHistory({ title, url: `https://www.bilibili.com/video/${bvid}` });
+    }
   } catch (err) {
     renderError("错误: " + err.message);
   } finally {
