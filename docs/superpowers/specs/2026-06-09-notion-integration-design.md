@@ -26,10 +26,10 @@
 |---|---|
 | 产品定位 | Obsidian 与 Notion **平级双目标**，welcome 首步让用户选择笔记工具 |
 | 设置结构 | `output` 枚举 → `destinations` 多选数组（checkbox UI） |
-| 属性策略 | **检测后映射**：先读 database schema，按列名匹配，存在就写、不存在跳过 |
+| 属性策略 | **检测后补全**（2026-06-09 spike 后升级）：先读 schema，标准列（Source/Author/Date/Tags，含中文别名）缺失时经 `PATCH /v1/data_sources` 自动建列再映射写入；建列失败不阻断 clip，降级为只写已有列 |
 | 认证方式 | Personal Access Token（internal integration token，`ntn_` 前缀） |
 | Database 配置 | **下拉选择器**：贴 token 后点「连接」，经 search API 列出可访问 database 供选择，同时完成配置即时验证；贴 URL 自动提取 ID 收进高级兜底 |
-| 新手路径 | 发布**官方公共模板**（含 Source/Author/Date/Tags 列），welcome 提供一键复制；与"检测后映射"互补，自建 database 同样可用 |
+| 新手路径 | 自动建列使任意空 database 开箱即用；**官方公共模板**降级为可选的锦上添花（发布与否不阻塞发版） |
 
 ### 认证方式的行业对照（调研于 2026-06-09）
 

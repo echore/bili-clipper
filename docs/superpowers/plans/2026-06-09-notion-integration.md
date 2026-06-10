@@ -666,9 +666,40 @@ async function getDataSourceId(token, databaseId) {
   return id;
 }
 
-/** Map note metadata onto whatever matching columns the data source has. */
+// Standard columns auto-created when absent (spike-verified: PATCH /v1/data_sources adds columns)
+const COLUMN_SPECS = [
+  { name: "Source", def: { url: {} }, type: "url", aliases: ["source", "url", "链接", "来源"] },
+  { name: "Author", def: { rich_text: {} }, type: "rich_text", aliases: ["author", "作者"] },
+  { name: "Date", def: { date: {} }, type: "date", aliases: ["date", "日期"] },
+  { name: "Tags", def: { multi_select: {} }, type: "multi_select", aliases: ["tags", "标签"] },
+];
+
+/** Add any missing standard columns; on failure fall back to the existing schema. */
+async function ensureStandardColumns(token, dataSourceId, ds) {
+  const props = ds.properties || {};
+  const missing = {};
+  for (const spec of COLUMN_SPECS) {
+    const exists = Object.entries(props).some(
+      ([n, d]) => d.type === spec.type && spec.aliases.includes(n.toLowerCase())
+    );
+    if (!exists) missing[spec.name] = spec.def;
+  }
+  if (Object.keys(missing).length === 0) return ds;
+  try {
+    return await notionFetch(
+      `/data_sources/${dataSourceId}`,
+      { method: "PATCH", body: JSON.stringify({ properties: missing }) },
+      token
+    );
+  } catch (e) {
+    return ds; // schema edit may be denied — degrade to mapping whatever exists
+  }
+}
+
+/** Map note metadata onto matching columns, auto-creating standard ones first. */
 async function buildNotionProperties(token, dataSourceId, meta) {
-  const ds = await notionFetch(`/data_sources/${dataSourceId}`, { method: "GET" }, token);
+  let ds = await notionFetch(`/data_sources/${dataSourceId}`, { method: "GET" }, token);
+  ds = await ensureStandardColumns(token, dataSourceId, ds);
   const out = {};
   for (const [name, def] of Object.entries(ds.properties || {})) {
     const key = name.toLowerCase();
@@ -815,6 +846,7 @@ guard 部分改为：
 重载扩展（保留 Step 2 of Task 6 设的 token/db id，并在 popup 勾选 Notion）→ 真实 CC 字幕视频点 Clip：
 1. clip bar 依次显示"正在写入 Notion…"等状态
 2. Notion database 出现新页面：title/Source/Date/Tags properties 正确、正文渲染正常
+2b. 自动建列：在 Notion 新建一个**只有 title 列的空 database**，连接给 connection 并在下拉中选中它 → clip → 确认 Source/Author/Date/Tags 四列被自动创建且值已写入
 3. 同时勾 Obsidian 时两边都成功，clip bar 显示 `✓ Obsidian　✓ Notion`
 4. 把 token 改错 → clip bar 显示 `✓ Obsidian　✗ Notion — Token 无效，请检查 Notion Token`
 
