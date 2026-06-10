@@ -362,7 +362,7 @@ function renderIdle() {
   _clipBar.style.cssText = _BAR_BASE + "background:#f4f0ff;border:1.5px solid #7c3aed;";
   _clipBar.innerHTML =
     `<div style="display:flex;align-items:center;gap:8px;">` +
-    `<span>📎</span><span style="color:#4c1d95;font-weight:500;">Clip to Obsidian</span>${badge}</div>` +
+    `<span>📎</span><span style="color:#4c1d95;font-weight:500;">Bili Clipper</span>${badge}</div>` +
     `<div style="display:flex;align-items:center;gap:6px;">` +
     `<button id="bili-clipper-btn" style="padding:4px 14px;background:#7c3aed;color:white;` +
     `border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;">Clip</button>` +

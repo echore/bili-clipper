@@ -106,6 +106,7 @@ document.getElementById("notion-connect").addEventListener("click", async () => 
     status.style.color = "#ef4444";
     return;
   }
+  chrome.storage.local.set({ notion_token: token }); // token proven valid — persist eagerly like the db keys
   _dbItems = resp.items;
   status.textContent = `✓ 已连接，找到 ${resp.items.length} 个 database`;
   status.style.color = "#16a34a";
@@ -125,7 +126,7 @@ document.getElementById("notion-connect").addEventListener("click", async () => 
 function saveSelectedDatabase() {
   const i = Number(document.getElementById("notion_database_select").value || 0);
   const d = _dbItems[i];
-  if (!d) return;
+  if (!d || !d.databaseId) return;
   _savedDatabaseId = d.databaseId;
   chrome.storage.local.set({
     notion_database_id: d.databaseId,

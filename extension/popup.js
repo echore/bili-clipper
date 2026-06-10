@@ -133,7 +133,7 @@ document.getElementById("notion-connect").addEventListener("click", async () => 
 function saveSelectedDatabase() {
   const i = Number(document.getElementById("notion_database_select").value || 0);
   const d = _dbItems[i];
-  if (!d) return;
+  if (!d || !d.databaseId) return;
   _savedDatabaseId = d.databaseId;
   chrome.storage.local.set({
     notion_database_id: d.databaseId,
