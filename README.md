@@ -2,7 +2,7 @@
 
 [![GitHub Release](https://img.shields.io/github/v/release/echore/bilibili-to-obsidian)](https://github.com/echore/bilibili-to-obsidian/releases/latest)
 
-Chrome 扩展，点一下，B 站视频字幕自动进 Obsidian，2 秒完成。
+Chrome 扩展，点一下，B 站视频字幕自动进 Obsidian 或 Notion，2 秒完成。
 
 **不需要配置任何东西。** 无需安装 Obsidian 插件，无需 Local REST API，无需服务器，装完即用。
 
@@ -37,7 +37,8 @@ Chrome 扩展，点一下，B 站视频字幕自动进 Obsidian，2 秒完成。
 
 - **Vault 名称** — Obsidian 标题栏显示的文件夹名称（例如 `Obsidian Vault`）
 - **目标文件夹** — Vault 内保存笔记的子文件夹（留空则保存到 Vault 根目录）
-- **输出目标** — `Obsidian`（自动在 Obsidian 中打开笔记）、`剪贴板`（仅复制到剪贴板）或`两者`
+- **输出目标** — 多选：`Obsidian`（自动在 Obsidian 中打开笔记）、`Notion`（写入 Notion database）、`剪贴板`（仅复制到剪贴板），可同时勾选多项
+- **Notion 设置**（勾选 Notion 后显示）— 支持写入 Notion：创建 connection → 连接 database → 扩展内一键选择，字段自动创建（详见扩展内设置指南）
 
 ## 使用方法
 

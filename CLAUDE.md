@@ -4,12 +4,12 @@
 Bili Clipper
 
 ## 一句话目标
-Chrome 扩展：在 B 站视频页注入 Clip bar，提取 CC 字幕，写入 Obsidian vault。
+Chrome 扩展：在 B 站视频页注入 Clip bar，提取 CC 字幕，写入 Obsidian vault 或 Notion database。
 
 ## 技术栈
 - 框架：Chrome Manifest V3
 - 语言：vanilla JS
-- 集成：Obsidian URI scheme（`obsidian://new`）+ 系统剪贴板
+- 集成：Obsidian URI scheme（`obsidian://new`）+ Notion REST API（background fetch，Access token 认证，版本 2026-03-11）+ 系统剪贴板
 
 ## 文件结构
 
@@ -18,7 +18,7 @@ bili-clipper/
 ├── extension/
 │   ├── manifest.json
 │   ├── content.js        # Clip bar UI + Bilibili API helpers + 字幕处理
-│   ├── background.js     # onInstalled → welcome.html；OPEN_WELCOME 消息处理
+│   ├── background.js     # onInstalled → welcome.html；OPEN_WELCOME / CLIP_TO_NOTION / SEARCH_NOTION_DATABASES 消息处理 + Notion API 客户端
 │   ├── popup.html/js     # 设置面板 + Clip 历史记录
 │   ├── welcome.html/js   # 首次安装引导页
 │   ├── icons/            # 16/48/128px PNG
@@ -38,10 +38,13 @@ bili-clipper/
 - Popup 设置保存反馈、Clip 历史记录
 - 扩展图标（紫底白回形针）
 - 隐私政策页面
+- Notion 集成（destinations 多选、database 下拉选择器、自动建列、Markdown 端点写入）
+- 输出目标插件化重构（writer 接口，可扩展新目标）
 
 **待完成（发布前）：**
 - Chrome Web Store 商店截图（1280×800）
 - 商店描述文案（中英文）
+- Notion onboarding 截图（welcome.html 三步引导，新版 Notion connection 界面）
 
 ## 协作原则
 
@@ -62,4 +65,4 @@ bili-clipper/
 ## 本项目专属 DoD
 - 类型检查：无（vanilla JS，不用 tsc）
 - 测试方式：chrome://extensions 重载扩展 → B 站视频页目视验证
-- 验收方式：浏览器操作验证 + Obsidian 实际写入确认
+- 验收方式：浏览器操作验证 + Obsidian 实际写入确认 + Notion database 实际写入确认
