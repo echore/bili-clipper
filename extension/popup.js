@@ -1,13 +1,22 @@
 // extension/popup.js
 
 // ─── Load + render saved settings ────────────────────────────────────────────
+const LEGACY_OUTPUT_MAP = {
+  obsidian: ["obsidian"],
+  clipboard: ["clipboard"],
+  both: ["obsidian", "clipboard"],
+};
+
 chrome.storage.local.get(
-  { vault_name: "", folder: "", output: "obsidian" },
+  { vault_name: "", folder: "", output: "", destinations: null },
   (s) => {
     document.getElementById("vault_name").value = s.vault_name;
     document.getElementById("folder").value = s.folder;
-    document.querySelectorAll("#output-seg button").forEach((btn) => {
-      btn.classList.toggle("active", btn.dataset.value === s.output);
+    const dests = Array.isArray(s.destinations)
+      ? s.destinations
+      : LEGACY_OUTPUT_MAP[s.output] || ["obsidian"];
+    document.querySelectorAll("#dest-checks input").forEach((cb) => {
+      cb.checked = dests.includes(cb.value);
     });
   }
 );
@@ -16,12 +25,12 @@ chrome.storage.local.get(
 let _saveHintTimer = null;
 
 function save() {
-  const output =
-    document.querySelector("#output-seg button.active")?.dataset.value ?? "obsidian";
+  const destinations = [...document.querySelectorAll("#dest-checks input:checked")]
+    .map((cb) => cb.value);
   chrome.storage.local.set({
     vault_name: document.getElementById("vault_name").value.trim(),
     folder: document.getElementById("folder").value.trim(),
-    output,
+    destinations,
   });
   const hint = document.getElementById("save-hint");
   hint.style.opacity = "1";
@@ -33,15 +42,9 @@ function save() {
   document.getElementById(id).addEventListener("input", save)
 );
 
-document.querySelectorAll("#output-seg button").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll("#output-seg button").forEach((b) =>
-      b.classList.remove("active")
-    );
-    btn.classList.add("active");
-    save();
-  });
-});
+document.querySelectorAll("#dest-checks input").forEach((cb) =>
+  cb.addEventListener("change", save)
+);
 
 document.getElementById("open-welcome").addEventListener("click", (e) => {
   e.preventDefault();
