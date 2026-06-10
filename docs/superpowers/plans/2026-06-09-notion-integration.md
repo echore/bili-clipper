@@ -56,6 +56,18 @@ curl -s "https://api.notion.com/v1/data_sources/$DS_ID" \
 
 预期：响应含 `properties` 对象，确认各列的 `type` 字段值（title/url/rich_text/date/multi_select）。
 
+- [ ] **Step 2b: 验证 search API 列出已连接 database（下拉选择器的数据来源）**
+
+```bash
+curl -s -X POST "https://api.notion.com/v1/search" \
+  -H "Authorization: Bearer $NOTION_TOKEN" \
+  -H "Notion-Version: 2026-03-11" \
+  -H "Content-Type: application/json" \
+  -d '{"filter": {"property": "object", "value": "data_source"}, "page_size": 50}' | head -c 2000
+```
+
+预期：results 里出现测试 database。记录到 spike 文档：返回对象类型是 `data_source` 还是 `database`、`id` 与 `parent.database_id` 各是什么、title 取哪个字段——这决定下拉选择器能否直接拿到 data_source_id 跳过 discovery。若 filter value 报错，按错误提示调整（旧版为 `"database"`）并记录。
+
 - [ ] **Step 3: 验证建页 + properties 写入**
 
 ```bash
@@ -99,6 +111,10 @@ curl -s -X PATCH "https://api.notion.com/v1/pages/$PAGE_ID/markdown" \
 - `**0:15** · 文本` 粗体时间戳正常
 - 裸视频 URL 渲染成什么（纯链接 / bookmark / embed）
 - 额外测试一次含 `<iframe ...>` 的内容，确认 HTML 是被剥离还是显示为文本（决定 Notion 正文是否绝不能含 iframe）
+
+- [ ] **Step 5b: 发布公共模板（welcome 一键复制用）**
+
+把测试 database 整理为标准模板：列为 title（名称随意）、`Source`(url)、`Author`(text)、`Date`(date)、`Tags`(multi-select)，删掉 spike 测试页。Notion 页面右上 Share → Publish，勾选 **Allow duplicate as template**，把公开链接记入 spike 文档（Task 9 welcome 引导用）。
 
 - [ ] **Step 6: 写 spike 结果文档并 commit**
 
@@ -560,6 +576,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       .catch((err) => sendResponse({ ok: false, detail: err.message }));
     return true; // keep the message channel open for the async response
   }
+  if (msg.type === "SEARCH_NOTION_DATABASES") {
+    searchNotionDatabases(msg.token)
+      .then(sendResponse)
+      .catch((err) => sendResponse({ ok: false, detail: err.message }));
+    return true;
+  }
 });
 
 // ─── Notion API client ───────────────────────────────────────────────────────
@@ -590,6 +612,32 @@ async function notionFetch(path, options, token) {
     throw err;
   }
   return data;
+}
+
+/** List databases the token can access — powers the database picker in popup/welcome.
+ *  Object type and id fields per spike findings (Task 1 Step 2b). */
+async function searchNotionDatabases(token) {
+  if (!token) return { ok: false, detail: "请先填写 Token" };
+  const data = await notionFetch(
+    "/search",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        filter: { property: "object", value: "data_source" },
+        page_size: 50,
+      }),
+    },
+    token
+  ).catch((err) => {
+    if (err.status === 401) throw new Error("Token 无效，请检查 Notion Token");
+    throw err;
+  });
+  const items = (data.results || []).map((r) => ({
+    dataSourceId: r.object === "data_source" ? r.id : "",
+    databaseId: r.parent?.database_id || (r.object === "database" ? r.id : ""),
+    title: (r.title || []).map((t) => t.plain_text).join("") || "未命名 database",
+  }));
+  return { ok: true, items };
 }
 
 /** Resolve and cache the data source id (API 2025-09-03 data source model). */
@@ -680,6 +728,14 @@ chrome.runtime.sendMessage({type:"CLIP_TO_NOTION", meta:{title:"通路测试", s
 
 预期：返回 `{ok: true, detail: "<page url>"}`，Notion 出现新页面。再用错 token 测一次，预期 `{ok:false, detail:"Token 无效…"}`。
 
+再验证 database 搜索通路：
+
+```js
+chrome.runtime.sendMessage({type:"SEARCH_NOTION_DATABASES", token:"<spike token>"}, console.log)
+```
+
+预期：`{ok:true, items:[{dataSourceId, databaseId, title:"<测试 database 名>"}]}`。
+
 - [ ] **Step 3: Commit**
 
 ```bash
@@ -767,13 +823,22 @@ git commit -m "feat: add Notion destination writer wired through background serv
   <div id="notion-settings" style="display:none;">
     <div class="row">
       <label>Notion Token</label>
-      <input type="password" id="notion_token" placeholder="ntn_ 开头的 integration token">
+      <div style="display:flex;gap:6px;">
+        <input type="password" id="notion_token" placeholder="ntn_ 开头" style="flex:1;">
+        <button id="notion-connect" style="padding:6px 10px;background:#7c3aed;color:white;
+          border:none;border-radius:6px;font-size:11px;cursor:pointer;flex-shrink:0;">连接</button>
+      </div>
+      <p id="notion-status" style="font-size:10px;color:#9ca3af;margin-top:4px;"></p>
     </div>
-    <div class="row">
-      <label>Notion Database（粘贴链接或 ID）</label>
-      <input type="text" id="notion_database" placeholder="https://notion.so/xxxx…">
+    <div class="row" id="notion-db-row" style="display:none;">
+      <label>保存到哪个 database</label>
+      <select id="notion_database_select"></select>
+    </div>
+    <details style="margin-bottom:14px;">
+      <summary style="font-size:10px;color:#9ca3af;cursor:pointer;">高级：手动粘贴 database 链接</summary>
+      <input type="text" id="notion_database" placeholder="https://notion.so/xxxx…" style="margin-top:6px;">
       <p id="notion-db-hint" style="font-size:10px;color:#9ca3af;margin-top:4px;"></p>
-    </div>
+    </details>
   </div>
 ```
 
@@ -814,7 +879,53 @@ function updateSectionVisibility() {
     notion_token: document.getElementById("notion_token").value.trim(),
 ```
 
-database 输入框单独处理（ID 变更时必须清掉 data source 缓存）：
+「连接」按钮 → 填充下拉选择器（同时承担 token 即时校验）：
+
+```js
+let _dbItems = [];
+
+document.getElementById("notion-connect").addEventListener("click", async () => {
+  const token = document.getElementById("notion_token").value.trim();
+  const status = document.getElementById("notion-status");
+  status.textContent = "连接中…";
+  status.style.color = "#9ca3af";
+  const resp = await chrome.runtime.sendMessage({ type: "SEARCH_NOTION_DATABASES", token });
+  if (!resp?.ok) {
+    status.textContent = resp?.detail || "连接失败";
+    status.style.color = "#ef4444";
+    return;
+  }
+  if (resp.items.length === 0) {
+    status.textContent = "未找到 database — 请先在 Notion 里把 database 连接给 integration（见设置指南）";
+    status.style.color = "#ef4444";
+    return;
+  }
+  _dbItems = resp.items;
+  status.textContent = `✓ 已连接，找到 ${resp.items.length} 个 database`;
+  status.style.color = "#16a34a";
+  const select = document.getElementById("notion_database_select");
+  select.innerHTML = _dbItems
+    .map((d, i) => `<option value="${i}">${d.title}</option>`)
+    .join("");
+  document.getElementById("notion-db-row").style.display = "";
+  saveSelectedDatabase();
+});
+
+function saveSelectedDatabase() {
+  const i = Number(document.getElementById("notion_database_select").value || 0);
+  const d = _dbItems[i];
+  if (!d) return;
+  chrome.storage.local.set({
+    notion_database_id: d.databaseId,
+    notion_data_source_id: d.dataSourceId, // picker delivers it directly — discovery becomes a no-op
+    notion_database_title: d.title,        // redisplay on next popup open
+  });
+}
+
+document.getElementById("notion_database_select").addEventListener("change", saveSelectedDatabase);
+```
+
+高级兜底输入框（ID 变更时必须清掉 data source 缓存）：
 
 ```js
 document.getElementById("notion_database").addEventListener("input", () => {
@@ -828,7 +939,7 @@ document.getElementById("notion_database").addEventListener("input", () => {
   }
   hint.textContent = id ? `已识别 ID：${id.slice(0, 8)}…` : "";
   hint.style.color = "#9ca3af";
-  chrome.storage.local.set({ notion_database_id: id, notion_data_source_id: "" });
+  chrome.storage.local.set({ notion_database_id: id, notion_data_source_id: "", notion_database_title: "" });
 });
 
 document.getElementById("notion_token").addEventListener("input", save);
@@ -837,12 +948,15 @@ document.querySelectorAll("#dest-checks input").forEach((cb) =>
 );
 ```
 
+加载回调中追加已选 database 的回显（defaults 加 `notion_database_title: ""`）：已有选择时在 `notion-status` 显示 `当前：<title>`。
+
 - [ ] **Step 3: 手动验证**
 
 1. 勾选 Notion → 设置区出现；取消 → 隐藏；Obsidian 同理
-2. 粘贴完整 database URL → hint 显示"已识别 ID"；粘贴乱文本 → 红色提示
-3. 换一个 database URL 后 `chrome.storage.local.get(console.log)` 确认 `notion_data_source_id` 被清空
-4. 用 popup 配置（而非 console 手设）走一遍完整 clip 流程成功
+2. 贴正确 token 点「连接」→ 绿色"✓ 已连接，找到 N 个 database"，下拉出现并可选；贴错 token → 红色"Token 无效"；用没连接任何 database 的 integration → 红色"未找到 database"提示
+3. 下拉切换选择后 `chrome.storage.local.get(console.log)` 确认 `notion_database_id` / `notion_data_source_id` / `notion_database_title` 同步更新
+4. 高级兜底：粘贴完整 database URL → hint 显示"已识别 ID"；粘贴乱文本 → 红色提示；输入后确认 `notion_data_source_id` 被清空
+5. 用 popup 配置（而非 console 手设）走一遍完整 clip 流程成功
 
 - [ ] **Step 4: bump 版本号 + Commit**
 
@@ -908,8 +1022,10 @@ git commit -m "feat: add Notion settings to popup, bump version to 0.2.0"
             font-weight:700;flex-shrink:0;margin-top:2px;">2</div>
           <div>
             <p style="font-size:12px;color:#374151;margin-bottom:6px;">
-              在 Notion 新建（或选一个）database 用来存字幕笔记，
-              页面右上 <strong>···</strong> → <strong>Connections</strong> → 连接到你刚创建的 integration
+              准备一个存字幕笔记的 database：推荐直接
+              <a href="<!-- spike 记录的模板公开链接 -->" target="_blank" style="color:#7c3aed;">复制官方模板</a>（已带好所有字段），
+              也可以用你自己的 database。然后在它的页面右上
+              <strong>···</strong> → <strong>Connections</strong> → 连接到你刚创建的 integration
             </p>
             <img src="assets/notion-step2.png" alt="database 连接 integration"
               style="width:100%;border-radius:6px;border:1px solid #e5e7eb;display:block;">
@@ -921,28 +1037,43 @@ git commit -m "feat: add Notion settings to popup, bump version to 0.2.0"
             font-weight:700;flex-shrink:0;margin-top:2px;">3</div>
           <div>
             <p style="font-size:12px;color:#374151;margin-bottom:6px;">
-              复制 database 页面链接，粘贴到下面的输入框（ID 会自动识别）
+              在下面贴入 token，点「连接」，从列表里选中你的 database
             </p>
-            <img src="assets/notion-step3.png" alt="复制 database 链接"
+            <img src="assets/notion-step3.png" alt="连接并选择 database"
               style="width:100%;border-radius:6px;border:1px solid #e5e7eb;display:block;">
           </div>
         </div>
       </div>
 
       <label for="notion_token">Notion Token <span style="color:#ef4444;">*</span></label>
-      <input type="password" id="notion_token" placeholder="ntn_ 开头的 integration token">
+      <div style="display:flex;gap:8px;">
+        <input type="password" id="notion_token" placeholder="ntn_ 开头的 integration token" style="flex:1;">
+        <button id="notion-connect" style="padding:8px 16px;background:#7c3aed;color:white;
+          border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0;">连接</button>
+      </div>
+      <p id="notion-status" style="margin-top:6px;font-size:12px;color:#9ca3af;"></p>
 
-      <label for="notion_database">Database 链接或 ID <span style="color:#ef4444;">*</span></label>
-      <input type="text" id="notion_database" placeholder="https://notion.so/xxxx…">
-      <p id="notion-db-hint" style="margin-top:6px;font-size:12px;color:#9ca3af;"></p>
+      <div id="notion-db-row" style="display:none;">
+        <label for="notion_database_select">保存到哪个 database <span style="color:#ef4444;">*</span></label>
+        <select id="notion_database_select" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;
+          border-radius:7px;font-size:13px;color:#111;"></select>
+      </div>
+
+      <details style="margin-top:12px;">
+        <summary style="font-size:12px;color:#9ca3af;cursor:pointer;">高级：手动粘贴 database 链接</summary>
+        <input type="text" id="notion_database" placeholder="https://notion.so/xxxx…" style="margin-top:8px;">
+        <p id="notion-db-hint" style="margin-top:6px;font-size:12px;color:#9ca3af;"></p>
+      </details>
     </div>
 ```
 
+（`notion-step3.png` 截图改为扩展里"连接 + 下拉选择"的界面截图，在 Task 8 完成后补拍。）
+
 保存按钮从 Obsidian 卡片移出，放在 Notion 卡片之后独立成卡或保留在最后一个设置卡内（实现时取布局更自然者，保存逻辑不受影响）。"开始使用"卡 badge 改为 3。
 
-- [ ] **Step 3: welcome.js — 分叉显示 + Notion 字段读写**
+- [ ] **Step 3: welcome.js — 分叉显示 + 连接/下拉 + 兜底输入**
 
-加载回调追加 token/db 回显（defaults 加 `notion_token: ""`、`notion_database_id: ""`）；新增：
+加载回调追加 token 回显与已选 database 回显（defaults 加 `notion_token: ""`、`notion_database_id: ""`、`notion_database_title: ""`，有 title 时 `notion-status` 显示 `当前：<title>`）；新增：
 
 ```js
 // ── 按勾选显示对应设置卡 ────────────────────────────────────────────────────────
@@ -956,6 +1087,50 @@ document.querySelectorAll("#dest-checks input").forEach((cb) =>
   cb.addEventListener("change", updateSetupCards)
 );
 
+// ── 「连接」按钮：列出可选 database（兼作 token 即时校验） ───────────────────────
+let _dbItems = [];
+
+document.getElementById("notion-connect").addEventListener("click", async () => {
+  const token = document.getElementById("notion_token").value.trim();
+  const status = document.getElementById("notion-status");
+  status.textContent = "连接中…";
+  status.style.color = "#9ca3af";
+  const resp = await chrome.runtime.sendMessage({ type: "SEARCH_NOTION_DATABASES", token });
+  if (!resp?.ok) {
+    status.textContent = resp?.detail || "连接失败";
+    status.style.color = "#ef4444";
+    return;
+  }
+  if (resp.items.length === 0) {
+    status.textContent = "未找到 database — 请先完成第 2 步（把 database 连接给 integration）";
+    status.style.color = "#ef4444";
+    return;
+  }
+  _dbItems = resp.items;
+  status.textContent = `✓ 已连接，找到 ${resp.items.length} 个 database`;
+  status.style.color = "#16a34a";
+  const select = document.getElementById("notion_database_select");
+  select.innerHTML = _dbItems
+    .map((d, i) => `<option value="${i}">${d.title}</option>`)
+    .join("");
+  document.getElementById("notion-db-row").style.display = "";
+  saveSelectedDatabase();
+});
+
+function saveSelectedDatabase() {
+  const i = Number(document.getElementById("notion_database_select").value || 0);
+  const d = _dbItems[i];
+  if (!d) return;
+  chrome.storage.local.set({
+    notion_database_id: d.databaseId,
+    notion_data_source_id: d.dataSourceId,
+    notion_database_title: d.title,
+  });
+}
+
+document.getElementById("notion_database_select").addEventListener("change", saveSelectedDatabase);
+
+// ── 高级兜底：手动粘贴链接 ──────────────────────────────────────────────────────
 /** Accepts a full Notion URL or bare id; returns 32-hex id or "". */
 function extractDatabaseId(input) {
   const m = (input || "").replace(/-/g, "").match(/[0-9a-f]{32}/i);
@@ -969,28 +1144,27 @@ document.getElementById("notion_database").addEventListener("input", () => {
   if (raw && !id) {
     hint.textContent = "未识别到有效 ID，请粘贴 database 页面链接";
     hint.style.color = "#ef4444";
-  } else {
-    hint.textContent = id ? `已识别 ID：${id.slice(0, 8)}…` : "";
-    hint.style.color = "#9ca3af";
+    return;
   }
+  hint.textContent = id ? `已识别 ID：${id.slice(0, 8)}…` : "";
+  hint.style.color = "#9ca3af";
+  if (id) chrome.storage.local.set({ notion_database_id: id, notion_data_source_id: "", notion_database_title: "" });
 });
 ```
 
-保存逻辑：校验扩展为"勾 Obsidian 必填 vault；勾 Notion 必填 token 和有效 db id"，保存对象追加：
+保存按钮校验扩展为"勾 Obsidian 必填 vault；勾 Notion 必须已有 `notion_token` 输入且 `notion_database_id` 已存在（下拉选过或兜底输入过），否则红框/红字提示"，保存对象追加：
 
 ```js
     notion_token: document.getElementById("notion_token").value.trim(),
-    notion_database_id: extractDatabaseId(document.getElementById("notion_database").value),
-    notion_data_source_id: "",   // db 可能已更换，写入时一律清缓存
 ```
 
-加载完成后调用一次 `updateSetupCards()`。
+（database 三元组由「连接/下拉/兜底输入」即时写入 storage，保存按钮不重复写。）加载完成后调用一次 `updateSetupCards()`。
 
 - [ ] **Step 4: 手动验证**
 
 1. 重装扩展（remove + load unpacked）触发首装 welcome：默认勾 Obsidian，只见 Obsidian 卡
 2. 勾 Notion → Notion 卡展开，三步截图正常显示
-3. 只勾 Notion：不填 token 保存被拦；填好保存成功，popup 中设置一致
+3. 只勾 Notion：不填 token 保存被拦；贴 token 点「连接」→ 下拉选 database → 保存成功，popup 中设置一致；"复制官方模板"链接可正常打开并复制
 4. 按 welcome 配置完整 clip 一次成功
 
 - [ ] **Step 5: Commit**
@@ -1046,6 +1220,10 @@ git push origin v0.2.0
 预期：Actions 自动打包 zip 并发布 GitHub Release。
 
 ---
+
+## 修订记录
+
+- 2026-06-09（同日修订）：基于同类方案调研（arxiv2notion、web-clipper、Search API），经用户确认加入两项改进：① database 下拉选择器（Task 1 Step 2b、Task 6 `SEARCH_NOTION_DATABASES`、Task 8/9 连接+下拉交互，贴 URL 降级为高级兜底）；② 官方公共模板（Task 1 Step 5b 发布，Task 9 welcome 引导一键复制）。新增 storage 键 `notion_database_title`。
 
 ## Self-Review 记录
 
