@@ -79,18 +79,10 @@
     }
     input:focus { outline: none; border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
 
-    .seg { display: flex; gap: 4px; margin-top: 6px; }
-    .seg button {
-      flex: 1; padding: 6px 4px;
-      border: 1px solid #d1d5db;
-      border-radius: 6px;
-      cursor: pointer;
-      background: white;
-      font-size: 12px;
-      color: #374151;
-      transition: all 0.15s;
-    }
-    .seg button.active { background: #7c3aed; color: white; border-color: #7c3aed; }
+    .checks { display: flex; gap: 16px; margin-top: 6px; }
+    .check { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #374151;
+             text-transform: none; letter-spacing: 0; font-weight: 400; margin: 0; cursor: pointer; }
+    .check input { width: auto; accent-color: #7c3aed; }
 
     .save-btn {
       margin-top: 20px;
@@ -256,11 +248,11 @@
       <label for="folder">笔记保存到哪个文件夹</label>
       <input type="text" id="folder" placeholder="例如：Raw（留空则存到 Vault 根目录）">
 
-      <label>输出到</label>
-      <div class="seg" id="output-seg">
-        <button class="active" data-value="obsidian">Obsidian</button>
-        <button data-value="clipboard">剪贴板</button>
-        <button data-value="both">两者都要</button>
+      <label>输出到（可多选）</label>
+      <div class="checks" id="dest-checks">
+        <label class="check"><input type="checkbox" value="obsidian" checked> Obsidian</label>
+        <label class="check"><input type="checkbox" value="notion"> Notion</label>
+        <label class="check"><input type="checkbox" value="clipboard"> 剪贴板</label>
       </div>
 
       <button class="save-btn" id="save-btn">保存设置</button>

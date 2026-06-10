@@ -16,13 +16,22 @@ if (TUTORIAL_URL) {
 }
 
 // ── 加载已保存的设置 ───────────────────────────────────────────────────────────
+const LEGACY_OUTPUT_MAP = {
+  obsidian: ["obsidian"],
+  clipboard: ["clipboard"],
+  both: ["obsidian", "clipboard"],
+};
+
 chrome.storage.local.get(
-  { vault_name: "", folder: "", output: "obsidian" },
+  { vault_name: "", folder: "", output: "", destinations: null },
   (s) => {
     document.getElementById("vault_name").value = s.vault_name;
     document.getElementById("folder").value = s.folder;
-    document.querySelectorAll("#output-seg button").forEach((btn) => {
-      btn.classList.toggle("active", btn.dataset.value === s.output);
+    const dests = Array.isArray(s.destinations)
+      ? s.destinations
+      : LEGACY_OUTPUT_MAP[s.output] || ["obsidian"];
+    document.querySelectorAll("#dest-checks input").forEach((cb) => {
+      cb.checked = dests.includes(cb.value);
     });
   }
 );
@@ -35,24 +44,15 @@ document.getElementById("fill-default-vault").addEventListener("click", () => {
   input.focus();
 });
 
-// ── 输出目标切换 ───────────────────────────────────────────────────────────────
-document.querySelectorAll("#output-seg button").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll("#output-seg button").forEach((b) =>
-      b.classList.remove("active")
-    );
-    btn.classList.add("active");
-  });
-});
-
 // ── 保存设置 ───────────────────────────────────────────────────────────────────
 document.getElementById("save-btn").addEventListener("click", () => {
   const vault_name = document.getElementById("vault_name").value.trim();
   const folder = document.getElementById("folder").value.trim();
-  const output =
-    document.querySelector("#output-seg button.active")?.dataset.value ?? "obsidian";
+  const destinations = [...document.querySelectorAll("#dest-checks input:checked")]
+    .map((cb) => cb.value);
 
-  if (!vault_name) {
+  // Vault 名称仅在勾选 Obsidian 时必填
+  if (destinations.includes("obsidian") && !vault_name) {
     const vaultInput = document.getElementById("vault_name");
     vaultInput.focus();
     vaultInput.style.borderColor = "#ef4444";
@@ -64,13 +64,11 @@ document.getElementById("save-btn").addEventListener("click", () => {
     return;
   }
 
-  chrome.storage.local.set({ vault_name, folder, output }, () => {
-    // Show toast
+  chrome.storage.local.set({ vault_name, folder, destinations }, () => {
     const toast = document.getElementById("toast");
     toast.classList.add("show");
     setTimeout(() => toast.classList.remove("show"), 2500);
 
-    // Update button
     const btn = document.getElementById("save-btn");
     btn.textContent = "✓ 已保存";
     btn.classList.add("saved");
