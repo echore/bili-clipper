@@ -31,14 +31,16 @@
 <body>
   <h2><span>📎</span> Bili Clipper <span id="save-hint" style="font-size:10px;color:#16a34a;font-weight:400;opacity:0;transition:opacity 0.3s;margin-left:4px;">✓ 已保存</span></h2>
 
-  <div class="row">
-    <label>Vault 名称</label>
-    <input type="text" id="vault_name" placeholder="Obsidian Vault">
-  </div>
+  <div id="obsidian-settings">
+    <div class="row">
+      <label>Vault 名称</label>
+      <input type="text" id="vault_name" placeholder="Obsidian Vault">
+    </div>
 
-  <div class="row">
-    <label>目标文件夹</label>
-    <input type="text" id="folder" placeholder="Raw">
+    <div class="row">
+      <label>目标文件夹</label>
+      <input type="text" id="folder" placeholder="Raw">
+    </div>
   </div>
 
   <div class="row">
@@ -48,6 +50,27 @@
       <label class="check"><input type="checkbox" value="notion"> Notion</label>
       <label class="check"><input type="checkbox" value="clipboard"> 剪贴板</label>
     </div>
+  </div>
+
+  <div id="notion-settings" style="display:none;">
+    <div class="row">
+      <label>Notion Token</label>
+      <div style="display:flex;gap:6px;">
+        <input type="password" id="notion_token" placeholder="ntn_ 开头" style="flex:1;">
+        <button id="notion-connect" style="padding:6px 10px;background:#7c3aed;color:white;
+          border:none;border-radius:6px;font-size:11px;cursor:pointer;flex-shrink:0;">连接</button>
+      </div>
+      <p id="notion-status" style="font-size:10px;color:#9ca3af;margin-top:4px;"></p>
+    </div>
+    <div class="row" id="notion-db-row" style="display:none;">
+      <label>保存到哪个 database</label>
+      <select id="notion_database_select"></select>
+    </div>
+    <details style="margin-bottom:14px;">
+      <summary style="font-size:10px;color:#9ca3af;cursor:pointer;">高级：手动粘贴 database 链接</summary>
+      <input type="text" id="notion_database" placeholder="https://notion.so/xxxx…" style="margin-top:6px;">
+      <p id="notion-db-hint" style="font-size:10px;color:#9ca3af;margin-top:4px;"></p>
+    </details>
   </div>
 
   <div class="history-section">
