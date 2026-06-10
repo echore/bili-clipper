@@ -43,7 +43,7 @@
 
 以下事实经 web 搜索官方文档确认，**非训练知识**：
 
-1. **Markdown 端点存在且活跃迭代**：`PATCH /v1/pages/{id}/markdown`，请求体为 discriminated union：`replace_content`（全量替换，内容放 `new_str`）、`insert_content`（带 `position`，2026 年 5 月新增）、`update_content`（搜索替换）。本项目用 `replace_content`。
+1. **Markdown 端点存在且已实测可用**：`PATCH /v1/pages/{id}/markdown`，请求体为嵌套 discriminated union（spike 实测，与文档调研推测的扁平形状不同）：`{"type": "replace_content", "replace_content": {"new_str": "..."}}`。本项目用 `replace_content`；另有 `insert_content`、`update_content` 命令。
 2. **⚠ 2025-09-03 版本破坏性变更**：引入 data source 概念。一个 database 可含多个 data source；新版 API 下创建页面的 parent 必须用 `data_source_id`（不是 `database_id`），schema 查询走 `/v1/data_sources/{id}`。**必须加 discovery 步骤**：`GET /v1/databases/{id}` → 取 `data_sources[0].id`。
 3. **当前最新 API 版本为 `2026-03-11`**（官方 versioning 页面确认于 2026-06-09），pin 此版本。data source 模型自 2025-09-03 起延续有效；2026-03-11 的破坏性变更（`position` 参数、`in_trash` 字段、`meeting_notes` 块）不影响本项目使用的端点。Markdown 端点对我们具体 Markdown 方言（`### 标题`、`**粗体**`、iframe HTML）的渲染行为，由 Phase 0 spike 用真实调用确认（置信度：不确定，待验证）。
 

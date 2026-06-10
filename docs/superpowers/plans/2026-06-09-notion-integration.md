@@ -20,6 +20,10 @@
 
 ### Task 1: 真实调用验证 Notion API 假设
 
+> **状态（2026-06-09）：已完成 ✓**（结果见 `docs/superpowers/spikes/2026-06-09-notion-api-spike.md`）。
+> 例外：Step 5b 公共模板未发布（spike 发现 API 可自动建列，模板可能降级为可选，待用户决策）；
+> onboarding 三张截图未采集，Task 9 执行前补（注意 Notion 已改用 connection/Access token 新术语）。
+
 **Files:**
 - Create: `docs/superpowers/spikes/2026-06-09-notion-api-spike.md`（结果记录，git 跟踪需 `add -f`）
 - Create: `extension/assets/notion-step1.png`、`notion-step2.png`、`notion-step3.png`（onboarding 截图素材）
@@ -632,11 +636,20 @@ async function searchNotionDatabases(token) {
     if (err.status === 401) throw new Error("Token 无效，请检查 Notion Token");
     throw err;
   });
-  const items = (data.results || []).map((r) => ({
-    dataSourceId: r.object === "data_source" ? r.id : "",
-    databaseId: r.parent?.database_id || (r.object === "database" ? r.id : ""),
-    title: (r.title || []).map((t) => t.plain_text).join("") || "未命名 database",
-  }));
+  const items = [];
+  for (const r of data.results || []) {
+    const dataSourceId = r.object === "data_source" ? r.id : "";
+    const databaseId = r.parent?.database_id || (r.object === "database" ? r.id : "");
+    let title = (r.title || []).map((t) => t.plain_text).join("");
+    if (!title && databaseId) {
+      // spike finding: data_source search results can have an empty title —
+      // the display name lives on the parent database
+      const db = await notionFetch(`/databases/${databaseId}`, { method: "GET" }, token)
+        .catch(() => null);
+      title = db ? (db.title || []).map((t) => t.plain_text).join("") : "";
+    }
+    items.push({ dataSourceId, databaseId, title: title || "未命名 database" });
+  }
   return { ok: true, items };
 }
 
@@ -697,7 +710,8 @@ async function clipToNotion(meta, body, isRetry = false) {
       `/pages/${page.id}/markdown`,
       {
         method: "PATCH",
-        body: JSON.stringify({ command: "replace_content", new_str: body }),
+        // shape verified by spike: nested discriminated union, NOT flat command/new_str
+        body: JSON.stringify({ type: "replace_content", replace_content: { new_str: body } }),
       },
       notion_token
     );
