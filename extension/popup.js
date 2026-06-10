@@ -110,7 +110,7 @@ document.getElementById("notion-connect").addEventListener("click", async () => 
     return;
   }
   if (resp.items.length === 0) {
-    status.textContent = "未找到 database — 请先在 Notion 里把 database 连接给 integration（见设置指南）";
+    status.textContent = "未找到 database — 请先在 Notion 里把 database 连接给 connection（见设置指南）";
     status.style.color = "#ef4444";
     return;
   }
