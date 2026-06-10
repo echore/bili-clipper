@@ -11,7 +11,8 @@
   "permissions": ["storage", "clipboardWrite"],
   "host_permissions": [
     "https://www.bilibili.com/*",
-    "https://api.bilibili.com/*"
+    "https://api.bilibili.com/*",
+    "https://api.notion.com/*"
   ],
   "background": {
     "service_worker": "background.js"
