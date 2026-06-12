@@ -42,11 +42,11 @@ bili-clipper/
 - Notion 集成（destinations 多选、database 下拉选择器、自动建列、Markdown 端点写入）
 - 输出目标插件化重构（writer 接口，可扩展新目标）
 - 多P/合集视频修复：按 `?p=` 解析分P cid，分P信息贯通标题/链接/iframe（v0.2.1）
+- Notion onboarding 截图（welcome.html 三步引导已嵌入真实截图，README 同步图文指南）
 
 **待完成（发布前）：**
 - Chrome Web Store 商店截图（1280×800）
 - 商店描述文案（中英文）
-- Notion onboarding 截图（welcome.html 三步引导，新版 Notion connection 界面）
 
 ## 协作原则
 
