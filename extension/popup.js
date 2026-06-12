@@ -77,12 +77,6 @@ function updateSectionVisibility() {
 
 // ─── Notion connect + database picker ────────────────────────────────────────
 
-/** Accepts a full Notion URL or bare id; returns 32-hex id or "". */
-function extractDatabaseId(input) {
-  const m = (input || "").replace(/-/g, "").match(/[0-9a-f]{32}/i);
-  return m ? m[0].toLowerCase() : "";
-}
-
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (ch) => (
     { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]
@@ -146,25 +140,6 @@ function saveSelectedDatabase() {
 }
 
 document.getElementById("notion_database_select").addEventListener("change", saveSelectedDatabase);
-
-// ─── Advanced fallback: manual database URL ───────────────────────────────────
-
-document.getElementById("notion_database").addEventListener("input", () => {
-  const raw = document.getElementById("notion_database").value.trim();
-  const id = extractDatabaseId(raw);
-  const hint = document.getElementById("notion-db-hint");
-  if (raw && !id) {
-    hint.textContent = "未识别到有效 ID，请粘贴 database 页面链接";
-    hint.style.color = "#ef4444";
-    return;
-  }
-  hint.textContent = id ? `已识别 ID：${id.slice(0, 8)}…` : "";
-  hint.style.color = "#9ca3af";
-  if (id) {
-    _savedDatabaseId = id;
-    chrome.storage.local.set({ notion_database_id: id, notion_data_source_id: "", notion_database_title: "" });
-  }
-});
 
 // ─── Clip history ─────────────────────────────────────────────────────────────
 
