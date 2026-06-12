@@ -1,5 +1,6 @@
 {
   "manifest_version": 3,
+  "minimum_chrome_version": "111",
   "name": "Bili Clipper",
   "version": "0.2.0",
   "description": "Clip Bilibili video transcripts to Obsidian",
@@ -18,6 +19,12 @@
     "service_worker": "background.js"
   },
   "content_scripts": [
+    {
+      "matches": ["https://www.bilibili.com/video/*"],
+      "js": ["page-hook.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
     {
       "matches": ["https://www.bilibili.com/video/*"],
       "js": ["content.js"],

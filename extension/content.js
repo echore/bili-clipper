@@ -517,9 +517,9 @@ function init() {
 }
 
 // ─── SPA navigation ───────────────────────────────────────────────────────────
-// Bilibili is a SPA — navigating between videos changes the URL via History API
-// without a full page reload. We intercept pushState/replaceState and listen for
-// popstate to reset the clip bar when the user navigates to a different video.
+// B 站是 SPA，站内切换视频/分P走 History API。pushState/replaceState 由
+// page-hook.js 在主世界拦截后派发 bili-clipper:navigation 事件（isolated
+// world 直接改写 history 对页面无效）；popstate（前进/后退）两个世界都能收到。
 
 let _currentUrl = location.href;
 
@@ -538,18 +538,7 @@ function handleNavigation() {
   init();
 }
 
-const _origPushState = history.pushState.bind(history);
-history.pushState = function (...args) {
-  _origPushState(...args);
-  handleNavigation();
-};
-
-const _origReplaceState = history.replaceState.bind(history);
-history.replaceState = function (...args) {
-  _origReplaceState(...args);
-  handleNavigation();
-};
-
+window.addEventListener("bili-clipper:navigation", handleNavigation);
 window.addEventListener("popstate", handleNavigation);
 
 init();
