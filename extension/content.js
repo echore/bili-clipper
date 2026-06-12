@@ -460,6 +460,13 @@ function renderSetupRequired() {
 async function handleClip() {
   if (_isProcessing || !_videoData) return;
 
+  // 扩展重载/更新后，旧页面里的 content script 已脱离扩展上下文，
+  // 任何 chrome.* 调用都会抛 "Extension context invalidated"
+  if (!chrome.runtime?.id) {
+    renderError("扩展已更新，请刷新页面后重试");
+    return;
+  }
+
   const settings = await getSettings();
   const dests = settings.destinations.filter((d) => WRITERS[d]);
 
