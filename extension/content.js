@@ -7,19 +7,33 @@ function getBvId() {
   return match ? match[1] : null;
 }
 
-async function getVideoInfo(bvid) {
+function getPageParam() {
+  const p = parseInt(new URLSearchParams(window.location.search).get("p"), 10);
+  return Number.isInteger(p) && p > 0 ? p : 1;
+}
+
+async function getVideoInfo(bvid, page = 1) {
   const res = await fetch(
     `https://api.bilibili.com/x/web-interface/view?bvid=${bvid}`,
     { credentials: "include" }
   );
   const data = await res.json();
   if (data.code !== 0) throw new Error(`Bilibili API error: ${data.message}`);
+  const d = data.data;
+  const pages = d.pages || [];
+  // 顶层 d.cid 恒等于 P1 的 cid（2026-06-12 实测），多P视频必须从 pages 取当前分P的 cid
+  const pageInfo = pages[page - 1] || pages[0] || null;
+  const isMultiPage = pages.length > 1;
   return {
-    aid: data.data.aid,
-    cid: data.data.cid,
-    title: data.data.title,
-    desc: data.data.desc || "",
-    author: data.data.owner?.name || "",
+    aid: d.aid,
+    cid: pageInfo ? pageInfo.cid : d.cid,
+    page: pageInfo ? pageInfo.page : 1,
+    title:
+      isMultiPage && pageInfo && pageInfo.part
+        ? `${d.title} - P${pageInfo.page} ${pageInfo.part}`
+        : d.title,
+    desc: d.desc || "",
+    author: d.owner?.name || "",
   };
 }
 
@@ -323,14 +337,15 @@ function _expandBar() {
 async function loadVideoDataAndRenderIdle() {
   const bvid = getBvId();
   if (!bvid) return;
+  const page = getPageParam();
   try {
-    const { aid, cid, title, desc, author } = await getVideoInfo(bvid);
+    const { aid, cid, page: resolvedPage, title, desc, author } = await getVideoInfo(bvid, page);
     const { subtitles, chapters } = await getPlayerData(aid, cid);
     if (subtitles.length === 0) {
       renderNoSubtitles();
       return;
     }
-    _videoData = { bvid, aid, cid, title, desc, author, subtitles, chapters };
+    _videoData = { bvid, aid, cid, page: resolvedPage, title, desc, author, subtitles, chapters };
     renderIdle();
   } catch (err) {
     renderError("无法加载视频信息");
