@@ -137,10 +137,10 @@ function buildSubtitleSection(items, chapters) {
   return lines.join("\n").trim();
 }
 
-function buildEmbedIframe(bvid, cid, aid) {
+function buildEmbedIframe(bvid, cid, aid, page) {
   return (
     `<iframe src="https://player.bilibili.com/player.html` +
-    `?bvid=${bvid}&cid=${cid}&aid=${aid}&page=1&autoplay=0" ` +
+    `?bvid=${bvid}&cid=${cid}&aid=${aid}&page=${page}&autoplay=0" ` +
     `scrolling="no" border="0" frameborder="no" framespacing="0" ` +
     `allowfullscreen="true" style="width:100%;aspect-ratio:16/9;"></iframe>`
   );
@@ -184,11 +184,16 @@ function sanitizeFilename(title) {
     .slice(0, 100);
 }
 
+function buildVideoUrl(bvid, page) {
+  const base = `https://www.bilibili.com/video/${bvid}`;
+  return page > 1 ? `${base}?p=${page}` : base;
+}
+
 /** Metadata shared by all destinations. */
-function buildNoteMeta(title, bvid, author, method) {
+function buildNoteMeta(title, bvid, page, author, method) {
   return {
     title,
-    sourceUrl: bvid ? `https://www.bilibili.com/video/${bvid}` : "",
+    sourceUrl: bvid ? buildVideoUrl(bvid, page) : "",
     author: author || "",
     date: new Date().toISOString().split("T")[0],
     tags: ["transcript", "bilibili"],
@@ -469,19 +474,19 @@ async function handleClip() {
   }
 
   _isProcessing = true;
-  const { bvid, aid, cid, title, desc, author, subtitles, chapters } = _videoData;
+  const { bvid, aid, cid, page, title, desc, author, subtitles, chapters } = _videoData;
 
   try {
     renderProcessing("正在提取字幕…");
     const items = await fetchSubtitleItems(subtitles[0].subtitle_url);
     const subtitleSection = buildSubtitleSection(items, chapters);
-    const meta = buildNoteMeta(title, bvid, author, "cc_subtitle");
+    const meta = buildNoteMeta(title, bvid, page, author, "cc_subtitle");
     const payload = {
       title,
       meta,
       obsidianNote:
         formatFrontmatter(meta) + "\n\n" +
-        formatNoteBody(subtitleSection, desc, buildEmbedIframe(bvid, cid, aid)),
+        formatNoteBody(subtitleSection, desc, buildEmbedIframe(bvid, cid, aid, page)),
       notionBody: formatNoteBody(subtitleSection, desc, meta.sourceUrl),
     };
 
@@ -496,7 +501,7 @@ async function handleClip() {
     }
     renderResults(results);
     if (results.some((r) => r.ok)) {
-      saveClipHistory({ title, url: `https://www.bilibili.com/video/${bvid}` });
+      saveClipHistory({ title, url: buildVideoUrl(bvid, page) });
     }
   } catch (err) {
     renderError("错误: " + err.message);
