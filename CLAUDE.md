@@ -18,6 +18,7 @@ bili-clipper/
 ├── extension/
 │   ├── manifest.json
 │   ├── content.js        # Clip bar UI + Bilibili API helpers + 字幕处理
+│   ├── page-hook.js      # MAIN world history 钩子，SPA 跳转感知
 │   ├── background.js     # onInstalled → welcome.html；OPEN_WELCOME / CLIP_TO_NOTION / SEARCH_NOTION_DATABASES 消息处理 + Notion API 客户端
 │   ├── popup.html/js     # 设置面板 + Clip 历史记录
 │   ├── welcome.html/js   # 首次安装引导页
@@ -33,13 +34,14 @@ bili-clipper/
 
 **已完成：**
 - Clip bar 注入、CC 字幕提取、写入 Obsidian vault
-- SPA 导航感知（pushState/replaceState 拦截）
+- SPA 导航感知（MAIN world history 钩子 + popstate；isolated world 拦截已证实无效并移除）
 - 首次安装 Onboarding（welcome.html）
 - Popup 设置保存反馈、Clip 历史记录
 - 扩展图标（紫底白回形针）
 - 隐私政策页面
 - Notion 集成（destinations 多选、database 下拉选择器、自动建列、Markdown 端点写入）
 - 输出目标插件化重构（writer 接口，可扩展新目标）
+- 多P/合集视频修复：按 `?p=` 解析分P cid，分P信息贯通标题/链接/iframe（v0.2.1）
 
 **待完成（发布前）：**
 - Chrome Web Store 商店截图（1280×800）
