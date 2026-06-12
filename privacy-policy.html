@@ -122,7 +122,7 @@
           <div class="subtitle">Chrome Extension Privacy Policy</div>
         </div>
       </div>
-      <div class="last-updated">Last updated: May 2026</div>
+      <div class="last-updated">Last updated: June 2026</div>
     </header>
 
     <div class="lang-toggle">
@@ -133,17 +133,29 @@
     <!-- 中文内容 -->
     <div class="content-zh active">
       <div class="highlight-box">
-        <p>🔒 Bili Clipper 不收集、不上传、不分享任何用户数据。所有数据仅存储在您本地设备上。</p>
+        <p>🔒 Bili Clipper 不收集、不分享任何用户数据。所有数据默认仅存储在您本地设备上；仅当您主动启用 Notion 输出并点击 Clip 时，笔记内容才会发送至 Notion 官方 API。</p>
       </div>
 
       <div class="section">
         <h2>我们收集哪些数据</h2>
         <p>Bili Clipper 仅在您的浏览器本地存储以下信息：</p>
         <ul>
-          <li><strong>用户设置</strong>：Obsidian Vault 路径、笔记模板等偏好设置</li>
+          <li><strong>用户设置</strong>：Obsidian Vault 路径、输出目标等偏好设置</li>
+          <li><strong>Notion 凭证</strong>：您粘贴的 Notion access token 与所选 database（仅在启用 Notion 输出时存在）</li>
           <li><strong>Clip 历史</strong>：您手动 Clip 的 B 站视频记录（仅保存在本地）</li>
         </ul>
-        <p style="margin-top: 12px;">以上数据通过浏览器原生的 <code>chrome.storage.local</code> API 存储，仅限您本人访问，不会离开您的设备。</p>
+        <p style="margin-top: 12px;">以上数据通过浏览器原生的 <code>chrome.storage.local</code> API 存储，仅限您本人访问。字幕与视频信息从 Bilibili 官方公开接口读取，仅在当前页面本地处理。</p>
+      </div>
+
+      <div class="section">
+        <h2>Notion 集成（可选功能）</h2>
+        <p>仅当您勾选 Notion 作为输出目标并手动点击 Clip 时，扩展才会将以下内容通过 HTTPS 发送至 Notion 官方 API（api.notion.com）：视频标题、作者、视频链接、简介与字幕文本。</p>
+        <ul>
+          <li>发送完全由您手动触发，扩展不会在后台自动上传任何内容</li>
+          <li>Access token 仅存储在本地 <code>chrome.storage.local</code> 中，除 Notion 官方 API 外不会发送给任何服务</li>
+          <li>写入 Notion 后的数据由 <a href="https://www.notion.com/privacy" style="color:#7c3aed;">Notion 隐私政策</a>约束</li>
+          <li>您可随时在扩展设置中清除 token，并在 Notion 的 Connections 设置中删除该 connection，以撤销全部访问权限</li>
+        </ul>
       </div>
 
       <div class="section">
@@ -151,7 +163,7 @@
         <ul>
           <li>不收集任何个人身份信息（姓名、邮箱、账号等）</li>
           <li>不追踪您的浏览行为或观看记录</li>
-          <li>不向任何第三方服务器上传数据</li>
+          <li>除上述由您主动启用的 Notion 集成外，不向任何第三方服务器上传数据</li>
           <li>不使用任何分析或广告 SDK</li>
           <li>不在扩展卸载后保留任何数据</li>
         </ul>
@@ -171,17 +183,29 @@
     <!-- English content -->
     <div class="content-en">
       <div class="highlight-box">
-        <p>🔒 Bili Clipper does not collect, upload, or share any user data. All data stays on your local device only.</p>
+        <p>🔒 Bili Clipper does not collect or share any user data. By default, all data stays on your local device; note content is sent to the official Notion API only when you explicitly enable Notion output and click Clip.</p>
       </div>
 
       <div class="section">
         <h2>What We Store</h2>
         <p>Bili Clipper stores only the following information locally in your browser:</p>
         <ul>
-          <li><strong>User settings</strong>: your Obsidian Vault path, note templates, and other preferences</li>
+          <li><strong>User settings</strong>: your Obsidian Vault path, output destinations, and other preferences</li>
+          <li><strong>Notion credentials</strong>: the Notion access token you paste and your selected database (present only if you enable Notion output)</li>
           <li><strong>Clip history</strong>: a local log of videos you have manually clipped</li>
         </ul>
-        <p style="margin-top: 12px;">All data is stored via the browser-native <code>chrome.storage.local</code> API, accessible only to you, and never leaves your device.</p>
+        <p style="margin-top: 12px;">All of the above is stored via the browser-native <code>chrome.storage.local</code> API and is accessible only to you. Subtitles and video metadata are read from Bilibili's official public API and processed locally on the page.</p>
+      </div>
+
+      <div class="section">
+        <h2>Notion Integration (Optional)</h2>
+        <p>Only when you select Notion as an output destination and manually click Clip, the extension sends the following over HTTPS to the official Notion API (api.notion.com): video title, author, video URL, description, and subtitle text.</p>
+        <ul>
+          <li>Sending is always triggered manually by you; the extension never uploads anything in the background</li>
+          <li>Your access token is stored only in local <code>chrome.storage.local</code> and is never sent to any service other than the official Notion API</li>
+          <li>Data written to Notion is governed by the <a href="https://www.notion.com/privacy" style="color:#7c3aed;">Notion Privacy Policy</a></li>
+          <li>You can revoke all access at any time by clearing the token in the extension settings and removing the connection in Notion's Connections settings</li>
+        </ul>
       </div>
 
       <div class="section">
@@ -189,7 +213,7 @@
         <ul>
           <li>We do not collect any personally identifiable information (name, email, account, etc.)</li>
           <li>We do not track your browsing behavior or watch history</li>
-          <li>We do not upload data to any remote server</li>
+          <li>We do not upload data to any remote server, except the Notion integration described above when you explicitly enable it</li>
           <li>We do not use analytics or advertising SDKs</li>
           <li>We do not retain any data after the extension is uninstalled</li>
         </ul>
