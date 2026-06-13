@@ -7,6 +7,8 @@ dist/
 *.log
 docs/
 .playwright-mcp/
+CLAUDE.md
+NOTION_PLAN.md
 LOG.md
 .claude/
 extension */
