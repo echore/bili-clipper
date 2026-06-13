@@ -420,7 +420,7 @@ function renderError(message) {
   _clipBar.innerHTML =
     `<span style="color:#dc2626;flex:1;min-width:0;">⚠ ${message}</span>` +
     `<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">` +
-    `<a href="https://github.com/echore/bilibili-to-obsidian#troubleshooting" ` +
+    `<a href="https://github.com/echore/bili-clipper" ` +
     `target="_blank" style="color:#dc2626;font-size:11px;text-decoration:underline;">帮助</a>` +
     _COLLAPSE_BTN + `</div>`;
 
