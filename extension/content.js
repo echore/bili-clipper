@@ -405,13 +405,17 @@ function renderProcessing(message) {
 
 }
 
-function renderSuccess(message, subtitle = "") {
-  const subtitleHtml = subtitle
+function renderSuccess(message, subtitle = "", notionUrl = "") {
+  // Notion link takes the middle slot when present (more actionable than the
+  // Obsidian fallback hint); both share the same flex:1 slot so layout is stable.
+  const middleHtml = notionUrl
+    ? `<a href="${notionUrl}" target="_blank" rel="noopener" style="color:#15803d;font-size:11px;flex:1;min-width:0;text-decoration:underline;">打开 Notion ↗</a>`
+    : subtitle
     ? `<span style="color:#6b7280;font-size:11px;flex:1;min-width:0;">${subtitle}</span>`
     : "";
   _clipBar.style.cssText = _BAR_BASE + "background:#f0fdf4;border:1.5px solid #16a34a;";
   _clipBar.innerHTML =
-    `<span style="color:#15803d;flex-shrink:0;">✓ ${message}</span>` + subtitleHtml + _COLLAPSE_BTN;
+    `<span style="color:#15803d;flex-shrink:0;">✓ ${message}</span>` + middleHtml + _COLLAPSE_BTN;
 
 }
 
@@ -432,10 +436,11 @@ function renderResults(results) {
     .join("　");
   const failed = results.filter((r) => !r.ok);
   if (failed.length === 0) {
+    const notion = results.find((r) => r.dest === "notion" && r.detail);
     const hint = results.some((r) => r.dest === "obsidian")
       ? "如未自动打开，请启动 Obsidian 或检查 Vault 名称是否正确"
       : "";
-    renderSuccess(summary, hint);
+    renderSuccess(summary, hint, notion ? notion.detail : "");
   } else {
     renderError(`${summary} — ${failed[0].detail || "写入失败"}`);
   }
