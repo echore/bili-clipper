@@ -5,8 +5,8 @@ __pycache__/
 dist/
 .DS_Store
 *.log
-docs/*
-!docs/superpowers/
+docs/
+.playwright-mcp/
 LOG.md
 .claude/
 extension */
