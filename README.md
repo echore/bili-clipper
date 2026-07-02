@@ -1,6 +1,6 @@
 # Bili Clipper · B 站字幕一键存 Obsidian / Notion
 
-[![GitHub Release](https://img.shields.io/github/v/release/echore/bili-clipper)](https://github.com/echore/bili-clipper/releases/latest)
+[![GitHub Release](https://img.shields.io/github/v/release/echore/bili-clipper?cacheSeconds=3600)](https://github.com/echore/bili-clipper/releases/latest)
 
 Chrome 扩展，点一下，B 站视频字幕自动进 Obsidian 或 Notion，2 秒完成。
 
